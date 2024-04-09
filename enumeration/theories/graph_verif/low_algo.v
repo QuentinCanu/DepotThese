@@ -4,7 +4,7 @@ Require Import PArith.BinPos PArith.BinPosDef.
 Require Import NArith.BinNat NArith.BinNatDef.
 From Bignums Require Import BigQ.
 From Polyhedra Require Import extra_misc inner_product vector_order.
-Require Import graph extra_array extra_int array_set rat_bigQ diameter img_graph refinement.
+From PolyhedraHirsch Require Import graph extra_array extra_int array_set rat_bigQ img_graph refinement diameter.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

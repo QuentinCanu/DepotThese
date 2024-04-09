@@ -60,7 +60,7 @@ def gen(polytope, param):
   return NO_BENCH
 
 # --------------------------------------------------------------------
-def lrs(polytope, param):
+def compute_lrs(polytope, param):
   name = polytope_name(polytope, param)
   inefile = os.path.join(DATA_DIR, name, "lrs", name+".ine")
   extfile = os.path.join(DATA_DIR, name, "lrs", name+".ext")
@@ -166,7 +166,7 @@ def diameter(polytope,param):
 # --------------------------------------------------------------------
 TASKS = {
   "gen" : gen,
-  "lrs" : lrs,
+  "lrs" : compute_lrs,
   "certificates" : certificates,
   "certificates_bin" : certificates_bin,
   "certificates_text" : certificates_text,

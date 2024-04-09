@@ -3,7 +3,7 @@ From Coq Require Import PArray Uint63.
 Require Import PArith.BinPos PArith.BinPosDef.
 Require Import NArith.BinNat NArith.BinNatDef.
 From Polyhedra Require Import extra_misc.
-Require Import extra_array extra_int graph high_graph refinement.
+From PolyhedraHirsch Require Import extra_array extra_int graph high_graph refinement.
 
 Set   Implicit Arguments.
 Unset Strict Implicit.

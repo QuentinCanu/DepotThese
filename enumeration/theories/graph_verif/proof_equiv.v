@@ -2,7 +2,8 @@ From mathcomp Require Import all_ssreflect all_algebra finmap.
 From Coq Require Import Uint63 PArray.
 From Polyhedra Require Import extra_misc inner_product extra_matrix vector_order affine row_submx barycenter.
 From Polyhedra Require Import lrel polyhedron poly_base simplex.
-Require Import enum_algo enum_proof graph high_graph img_graph extra_array extra_int rat_bigQ array_set diameter refinement.
+From PolyhedraHirsch Require Import graph high_graph img_graph extra_array extra_int rat_bigQ array_set diameter refinement extra_simplex.
+Require Import low_algo high_algo.
 Require Import NArith.BinNat NArith.BinNatDef.
 From Bignums Require Import BigQ.
 
@@ -260,34 +261,6 @@ End Refinement.
 
 Section LexVerification.
 
-Section Def.
-Context (m' n' : nat).
-Local Notation m := m'.+1.
-Local Notation n := n'.+1.
-Context (A : 'M[rat]_(m,n)) (b : 'cV[rat]_m).
-Local Notation b_pert := (Simplex.b_pert b).
-
-Definition set_Im : choiceType := [choiceType of {set 'I_m}].
-Definition M_n := [choiceType of 'M[rat]_(n,1+m)].
-Definition enum_type := [choiceType of (set_Im * M_n)%type].
- 
-Context (G : graph enum_type).
-
-Definition card_verification (e : enum_type) := #|e.1| == n.
-Definition feas_verification (e : enum_type) := e.2 \in Simplex.lex_polyhedron A b_pert.
-Definition bas_verification (e : enum_type):= (row_submx A e.1) *m e.2 == row_submx b_pert e.1.
-Definition vertex_verification (e : enum_type) := [&& card_verification e, feas_verification e & bas_verification e].
-
-Definition inter_verification (e e': enum_type) := (#|e.1 :&: e'.1| == n').
-Definition reg_verification (e : enum_type) := #|` successors G e| == n.
-Definition struct_verification (e : enum_type) := reg_verification e && all (inter_verification e) (successors G e).
-
-Definition high_enum_algo := 
-  all vertex_verification (vertices G) &&
-  all struct_verification (vertices G).
-
-End Def.
-
 Section RelLexGraph.
 
 Context (m' n' : nat).
@@ -472,14 +445,12 @@ Hypothesis gG_vert : rel_vert_graph (g_vert, l_vert) G_vert.
 
 Context (morph morph' : array int) (edge_inv : array (array (int * int))).
 
-Definition phi (e : enum_type m' n') := col 0 e.2.
-
 Lemma img_lex_graph_equiv:
   img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert ->
-  G_vert = (phi) @/ G_lex.
+  G_vert = (@phi m' n') @/ G_lex.
 Proof.
 apply/rel_graph_r_img; [ | |exact:gG_lex|exact:gG_vert].
-- apply: (rel_couple_func_snd (f:=(fun x=> x.[0%uint63])) (F:=(fun X=> col 0 X))).
+- apply: (rel_couple_func_snd (f:=(fun x=> x.[0%uint63]))).
   exact: (rel_point_mx_col_col0).
 - exact/rel_point_cV_eq/rat_bigQ_eq.
 Qed.
@@ -491,24 +462,17 @@ End ImgGraphEquivalence.
 Section PolyBoundedEquivalence.
 
 Context (m' n' : nat).
-Local Notation m := (m'.+1).
-Local Notation n := (n'.+1).
+Local Notation m := m'.+1.
+Local Notation n := n'.+1.
 
 Context (Po : Com.polyType) (A : 'M[rat]_(m,n)) (b : 'cV[rat]_m).
 Hypothesis Po_Ab : rel_poly Po (A,b).
 
-Context (y_pos y_neg : array (array (BigQ.bigQ))) (Y_pos Y_neg : 'M[rat]_(n,m)).
-Hypothesis yY_pos : rel_bound y_pos Y_pos.
-Hypothesis yY_neg : rel_bound y_neg Y_neg.
+Context (y_pos y_neg : array (array bigQ)).
+Context (Y_pos Y_neg : 'M[rat]_(n,m)).
 
-Definition high_certif_func x i r :=
-  (r *m A == row i (x%:M)) && (0) <=m (r^T).
-
-Definition high_certif_fold Y x:=
-  [forall i : 'I_n, high_certif_func x i (row i Y)]. 
-
-Definition high_poly_bounded:= 
-  high_certif_fold Y_pos 1%R && high_certif_fold Y_neg (-1)%R.
+Hypothesis rel_pos : rel_bound y_pos Y_pos.
+Hypothesis rel_neg : rel_bound y_neg Y_neg.
 
 Lemma bound_certif_func_equiv:
   (rat_bigQ =~> @rel_int_ord n' =~> @rel_point_rV _ _ rat_bigQ m' =~> eq)
@@ -517,7 +481,7 @@ Lemma bound_certif_func_equiv:
       (weighted_lines r Po.1)
       (BigQUtils.delta_line (Com.n Po) i x) &&
       arr_all BigQUtils.bigQ_ge0 r
-  ) high_certif_func.
+  ) (high_certif_func A).
 Proof.
 move=> x X xX i I iI r R rR; congr andb.
 - apply/rel_point_rV_eq; [exact:rat_bigQ_eq| | ].
@@ -529,14 +493,14 @@ move=> x X xX i I iI r R rR; congr andb.
   pose f := fun (i : int) r => BigQUtils.bigQ_ge0 r.
   have fF: (rel_int_ord =~> rat_bigQ =~> eq) f F by move=> ?? _; exact/rat_bigQ_ge0.
   move: (rel_point_rV_iall fF rR); rewrite /f /F.
-  suff ->: [forall j, 0 <= R ord0 j] = (0) <=m (R^T) by
+  suff ->: [forall j, (0 <= R ord0 j)%R] = ((0) <=m (R^T))%R by
     move=> <-; rewrite /arr_all /iall all_map; by elim: (irange0 (length _)).
   by apply/eq_forallb=> k; rewrite !mxE.
 Qed.
 
 Lemma bound_certif_fold_equiv:
   (@rel_bound m' n' =~> rat_bigQ =~> eq)
-  (@bound_certif_fold Po) (high_certif_fold).
+  (@bound_certif_fold Po) (high_certif_fold A).
 Proof.
 move=> y Y yY x X xX; rewrite /bound_certif_fold /high_certif_fold.
 move/rel_point_mx_row_iall: (bound_certif_func_equiv xX).
@@ -544,7 +508,7 @@ exact.
 Qed.
 
 Lemma poly_bounded_equiv:
-  @bounded_Po_test Po y_pos y_neg = high_poly_bounded.
+  @bounded_Po_test Po y_pos y_neg = high_poly_bounded A Y_pos Y_neg.
 Proof. congr andb; exact/bound_certif_fold_equiv. Qed.
 
 
@@ -571,8 +535,8 @@ Definition dim_full_array (V : array 'cV[rat]_n)
     arr_all (fun x=> (x < length V)%O) Map,
     (Origin < length V)%O &
     iall
-      (fun i=> ((get V (get Map i))^T - (get V Origin)^T) *m Inv == 
-      \row_j (int_to_nat i == j)%:R)
+      (fun i=> (((get V (get Map i))^T - (get V Origin)^T) *m Inv)%R == 
+      (\row_j (int_to_nat i == j)%:R)%R)
     (length Map)
   ].
 
@@ -622,15 +586,9 @@ Hypothesis GL_length : forall x, x \in vertices G = (x < length L)%O.
 Context (origin : Uint63.int) (map_ : array Uint63.int).
 Context (Inv : 'M[rat]_n).
 
-Definition high_dim_full (x0 : 'cV[rat]_n) (s : 'M[rat]_n) :=
-  [&& x0 \in vertices G',
-    [forall i, col i s \in vertices G'] &
-    let X := \matrix_(i < n) ((col i s)^T - (x0)^T) in X *m Inv == 1%:M
-  ].
-
 Lemma dim_full_vtx_final_graph: 
   dim_full_array L origin map_ Inv ->
-  exists x0, exists s, high_dim_full x0 s.
+  exists x0, exists s, high_dim_full x0 s Inv (vertices G').
 Proof.
 case/and4P=> /eqP len_map /allP map_in origin_in /allP inv_eq.
 exists L.[origin].
@@ -638,8 +596,8 @@ set s_seq := [seq L.[i] | i <- arr_to_seq map_].
 have s_seq_n: seq.size s_seq == n by rewrite size_map size_arr_to_seq len_map.
 set s_tuple := Tuple s_seq_n.
 have s_tuple_tnth: forall i, tnth s_tuple i = L.[map_.[nat_to_int i]].
-- by move=> i; rewrite (tnth_nth 0) /= (nth_map (default map_)) ?nth_arr_to_seq // ?size_arr_to_seq -?len_map //.
-set s := (\matrix_(i < n) (tnth s_tuple i)^T)^T.
+- move=> i; rewrite /tnth /= (nth_map (default map_)) ?nth_arr_to_seq // ?size_arr_to_seq -?len_map //.
+set s := ((\matrix_(i < n) (tnth s_tuple i)^T)^T)%R.
 exists s; move=> [:i_thre]. 
 apply/and3P; split.
 - rewrite -(gisof_vtx GLG') /= in_imfset //=.
@@ -652,7 +610,7 @@ apply/and3P; split.
   by abstract: i_thre i; apply:(int_threshold_length (a:=map_)); rewrite -len_map.
 - apply/eqP/row_matrixP=> i; rewrite row_mul.
   rewrite rowK -tr_row rowK trmxK s_tuple_tnth.
-  have ->: row i 1%:M = \row_j (i == j)%:R by
+  have ->: row i 1%:M = (\row_j (i == j)%:R)%R by
     move=> t; apply/matrixP=> p q; rewrite !mxE.
   apply/eqP; move: (inv_eq (nat_to_int i)); rewrite nat_to_intK //.
   apply; rewrite mem_irangeE le0x ltEint_nat -len_map /=.
@@ -680,7 +638,7 @@ Hypothesis glG : rel_vert_graph (g,l) G.
 
 Lemma dim_full_vtx_graph :
   dim_full_test l map_ origin inv Po ->
-  exists x0, exists s, high_dim_full G Inv x0 s.
+  exists x0, exists s, high_dim_full x0 s Inv (vertices G).
 Proof.  
 case: glG=> -[G' L'] glGL GL'G.
 case: (glGL)=> /= len_gl [/= gG' lL'].
@@ -756,18 +714,205 @@ Section GraphN0.
 Context (m' n' : nat).
 
 Lemma graph_n0_equiv: 
-  (@rel_lex_graph m' n' =~> eq) 
-    (fun g=> lex_graph_n0 g.1) (fun G=> G != graph0 _).
+(@rel_lex_graph m' n' =~> eq) 
+(fun g=> lex_graph_n0 g.1) (fun G=> G != graph0 _).
 Proof.
 case=> g l G [[g' l']] [_] [/= gg' ll'] gl'G.
 apply/idP/idP.
 - move=> g0; apply/graph0Pn; exists l'.[0%uint63].
-  rewrite -(gisof_vtx gl'G) /=; apply/imfsetP; exists 0%uint63=> //=.
-  by rewrite -(rel_struct_vtx gg').
+rewrite -(gisof_vtx gl'G) /=; apply/imfsetP; exists 0%uint63=> //=.
+by rewrite -(rel_struct_vtx gg').
 - case/graph0Pn=> x; rewrite -(gisof_vtx gl'G) /=.
-  case/imfsetP=> k /=; rewrite -(rel_struct_vtx gg')=> + _.
-  exact/le_lt_trans/le0x.
+case/imfsetP=> k /=; rewrite -(rel_struct_vtx gg')=> + _.
+exact/le_lt_trans/le0x.
 Qed.
 
 End GraphN0.
+
+(* --------------------------------------------------------------- *)
+
+Section HirschVerification.
+
+Context (Po : Com.polyType).
+Hypothesis Po_format : poly_format Po.
+Local Notation m' := (Com.m Po).-1.
+Local Notation n' := (Com.n Po).-1.
+
+Context (g_lex : graph.graph) (l_lex : Com.lex_mapping).
+Hypothesis gl_lex_format : lex_graph_format Po g_lex l_lex.
+
+Context (g_vert : graph.graph) (l_vert : array (array BigQ.bigQ)).
+Hypothesis gl_vert_format : vert_graph_format Po g_vert l_vert.
+
+Context (morph morph' : array Uint63.int). 
+Context (edge_inv : array (array (Uint63.int * Uint63.int))).
+
+Context (y_pos y_neg : array (array BigQ.bigQ)).
+Hypothesis y_pos_format : bound_format Po y_pos.
+Hypothesis y_neg_format : bound_format Po y_neg.
+
+Hypothesis enum_h : enum_algo Po g_lex l_lex.
+Hypothesis img_h : img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert.
+Hypothesis bound_h : @bounded_Po_test Po y_pos y_neg.
+Hypothesis graph_h : lex_graph_n0 g_lex.
+
+Local Notation high_poly := (spec_poly m' n' Po).
+Local Notation A := high_poly.1.
+Local Notation b := high_poly.2.
+Local Notation G_lex := (spec_lex_graph m' n' (g_lex,l_lex)).
+Local Notation G_vert := (spec_vert_graph n' (g_vert,l_vert)).
+Local Notation P := (poly_of_syst (A,b)).
+
+
+Lemma high_enum_h : high_enum_algo A b G_lex.
+Proof.
+move: (format_poly_precond Po_format) (lex_graph_format_precond Po_format gl_lex_format).
+move/spec_func_poly=> + /spec_func_lex_graph.
+by move/lex_certif_equiv=> /[apply] /= <-.
+Qed.
+
+Lemma high_graph_h : G_lex != graph0 _.
+Proof.
+move: (lex_graph_format_precond Po_format gl_lex_format).
+by move/spec_func_lex_graph/graph_n0_equiv=> <-.
+Qed. 
+
+Lemma high_img_h:
+  G_vert = ((@phi m' n') @/ G_lex).
+Proof.
+apply/img_lex_graph_equiv; [| |exact:img_h].
+- exact/spec_func_lex_graph/lex_graph_format_precond.
+- exact/spec_func_vert_graph/vert_graph_format_precond.
+Qed.
+
+Lemma high_bound_h:
+  high_poly_bounded A (spec_bound m' n' y_pos) (spec_bound m' n' y_neg).
+Proof.
+move: (format_poly_precond Po_format) 
+  (bound_format_precond Po_format y_pos_format)
+  (bound_format_precond Po_format y_neg_format).
+move/spec_func_poly=> + /spec_func_bound + /spec_func_bound.
+move/poly_bounded_equiv=> /[apply] /[apply] /eq_imply; exact.
+Qed.
+
+Lemma P_compact : compact P.
+Proof. exact/high_poly_boundedP/high_bound_h. Qed.
+
+Lemma Validation: poly_graph P = G_vert.
+Proof.
+rewrite high_img_h.
+apply/repr_poly_graph; 
+  [ exact: P_compact|exact: high_enum_h|exact: high_graph_h].
+Qed.
+
+Context (origin : Uint63.int) (map_ : array int) (inv : array (array BigQ.bigQ)).
+Hypothesis inv_format: inv_format Po inv.
+
+Context (start : Uint63.int).
+
+Hypothesis dim_h : dim_full_test l_vert map_ origin inv Po.
+Hypothesis diameter_h : diameter_check g_vert Po start. 
+
+
+Lemma high_dim_h:
+  exists x0, exists s, high_dim_full x0 s (spec_inv n' inv) (vertex_set P). 
+Proof.
+move: (format_poly_precond Po_format) 
+  (inv_format_precond Po_format inv_format)
+  (vert_graph_format_precond Po_format gl_vert_format).
+move/spec_func_poly=> + /spec_func_inv + /spec_func_vert_graph.
+move/dim_full_vtx_graph=> /[apply] /[apply].
+case/(_ _ _ dim_h)=> /= x0 [s].
+rewrite -Validation vtx_mk_graph=> h.
+by exists x0; exists s.
+Qed.
+
+Lemma P_full_dim : \pdim P = n'.+2.
+Proof.
+case: high_dim_h=> ? [?] /high_dim_fullP.
+by rewrite -(conv_vertex_set P_compact).
+Qed.
+
+Lemma high_diameter_h:
+  (diameter G_vert > m'.+1 - n'.+1)%nat.
+Proof.
+move: (format_poly_precond Po_format)
+  (vert_graph_format_precond Po_format gl_vert_format).
+move/spec_func_poly=> + /spec_func_vert_graph.
+by move/high_diameter_check_equiv=> /[apply] /(_ _ diameter_h).
+Qed.
+
+Lemma disprove_Hirsch:
+  ((diameter (poly_graph P)) > 
+  #|`facets P| - (\pdim P).-1)%nat.
+Proof.
+case: high_dim_h=> x [s] high_dim.
+apply/high_algo_Hirsch; 
+  [ exact:high_enum_h|exact:high_img_h|
+    exact:high_bound_h|exact:high_graph_h|
+    exact:high_dim|exact:high_diameter_h].
+Qed.
+
+End HirschVerification.
+
+Section ExactDimension.
+Context (Po : Com.polyType).
+Hypothesis Po_format : poly_format Po.
+Local Notation m' := (Com.m Po).-1.
+Local Notation n' := (Com.n Po).-1.
+Context (g_lex : graph.graph) (l_lex : Com.lex_mapping).
+Hypothesis gl_lex_format : lex_graph_format Po g_lex l_lex.
+
+Context (g_vert : graph.graph) (l_vert : array (array BigQ.bigQ)).
+Hypothesis gl_vert_format : vert_graph_format Po g_vert l_vert.
+
+Context (morph morph' : array Uint63.int). 
+Context (edge_inv : array (array (Uint63.int * Uint63.int))).
+
+Context (y_pos y_neg : array (array BigQ.bigQ)).
+Hypothesis y_pos_format : bound_format Po y_pos.
+Hypothesis y_neg_format : bound_format Po y_neg.
+
+Hypothesis enum_h : enum_algo Po g_lex l_lex.
+Hypothesis img_h : img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert.
+Hypothesis bound_h : @bounded_Po_test Po y_pos y_neg.
+Hypothesis graph_h : lex_graph_n0 g_lex.
+
+Local Notation high_poly := (spec_poly m' n' Po).
+Local Notation A := high_poly.1.
+Local Notation b := high_poly.2.
+Local Notation G_lex := (spec_lex_graph m' n' (g_lex,l_lex)).
+Local Notation G_vert := (spec_vert_graph n' (g_vert,l_vert)).
+
+Lemma diameter_of_polyXXdimXX k:
+  diameter_exact g_vert Po k ->
+  diameter (poly_graph (poly_of_syst high_poly)) = int_to_nat k.
+Proof.
+move=> diameter_h.
+have:= (Validation Po_format gl_lex_format gl_vert_format y_pos_format y_neg_format).
+move=> /(_ _ _ _ enum_h img_h bound_h graph_h) ->.
+move: (vert_graph_format_precond Po_format gl_vert_format).
+move/spec_func_vert_graph=> rel_g_vert. 
+rewrite -(rel_graph_diameter rel_g_vert) /=.
+move: diameter_h=> /eqP diam_h.
+apply/nat_to_int_inj; [|exact:int_thresholdP|rewrite int_to_natK //].
+rewrite inE.
+apply/(@leq_ltn_trans (length g_vert)); last exact/int_thresholdP.
+case: rel_g_vert=> -[g' ?] [_ [/= gg' _] _].
+rewrite (rel_struct_diameter gg') -(rel_struct_card gg').
+apply/bigmax_leqP=> p _; exact: size_path_le.
+Qed.
+
+Lemma diameter_of_poly20dim21:
+  diameter_exact g_vert Po 21%uint63->
+  diameter (poly_graph (poly_of_syst high_poly)) = 21%nat.
+Proof. by move/diameter_of_polyXXdimXX=> ->. Qed.
+
+Lemma diameter_of_poly23dim24:
+  diameter_exact g_vert Po 24%uint63->
+  diameter (poly_graph (poly_of_syst high_poly)) = 24%nat.
+Proof. by move/diameter_of_polyXXdimXX=> ->. Qed.
+
+End ExactDimension.
+
 

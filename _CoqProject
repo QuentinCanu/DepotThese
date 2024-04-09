@@ -1,5 +1,6 @@
 -R _build/default/theories Polyhedra
--R _build/default/enumeration/theories PolyhedraHirsch
+-R _build/default/enumeration/theories/common PolyhedraHirsch
+-R _build/default/enumeration/theories/graph_verif PolyhedraHirschVerif
 
 -arg -w -arg -notation-overridden
 -arg -w -arg -redundant-canonical-projection
