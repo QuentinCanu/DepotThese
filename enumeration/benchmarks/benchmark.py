@@ -8,7 +8,7 @@ import os
 import re
 import time
 import math
-from scripts import genlrs, lrs2dict, dict2bin, bin2coq, dict2text, coqjobs
+from scripts import genlrs, lrs2common, dict2bin, bin2coq, dict2text, coqjobs
 import csv
 import shutil
 import json
@@ -68,13 +68,13 @@ def compute_lrs(polytope, param):
   return {"time" : time, "memory" : memory}
 
 # --------------------------------------------------------------------
-def certificates(polytope, param):
+def common_certificates(polytope, param):
   name = polytope_name(polytope, param)
   hirsch = name in HIRSCH_CEX
   st = time.time()
-  dict = lrs2dict.lrs2dict(name,hirsch)
+  dict = lrs2common.lrs2common(name,hirsch)
   et = time.time()
-  certif_path_dir = os.path.join(DATA_DIR,name,"certificates")
+  certif_path_dir = os.path.join(DATA_DIR,name,"certificates","common")
   os.makedirs(certif_path_dir,exist_ok=True)
   certif_path = os.path.join(certif_path_dir,name+".json")
   with open(certif_path, "w") as stream:
@@ -99,8 +99,10 @@ def certificates_text(polytope, param):
   certif_path = os.path.join(DATA_DIR,name,"certificates",name+".json")
   with open(certif_path) as stream:
     dict = json.load(stream)
+  st = time.time()
   dict2text.dict2text(name,dict)
-  return NO_BENCH
+  et = time.time()
+  return {"time" : et - st}
 
 # --------------------------------------------------------------------
 def compilation(text = False):
@@ -167,14 +169,14 @@ def diameter(polytope,param):
 TASKS = {
   "gen" : gen,
   "lrs" : compute_lrs,
-  "certificates" : certificates,
+  "common_certificates" : common_certificates,
   "certificates_bin" : certificates_bin,
-  "certificates_text" : certificates_text,
-  "compilation" : compilation(),
-  "compilation_text" : compilation(text = True),
-  "validation" : job("Validation"),
-  "validation_compute" : job("Validation_Compute"),
-  "diameter" : diameter
+  # "certificates_text" : certificates_text,
+  # "compilation" : compilation(),
+  # "compilation_text" : compilation(text = True),
+  # "validation" : job("Validation"),
+  # "validation_compute" : job("Validation_Compute"),
+  # "diameter" : diameter
 }
 
 def create_arguments(args):
@@ -223,7 +225,6 @@ def clean(args):
               os.remove(path_ext)
   command_call("dune clean")
   command_call("dune build " + os.path.join("..", "theories"))
-        
 
 
 # --------------------------------------------------------------------

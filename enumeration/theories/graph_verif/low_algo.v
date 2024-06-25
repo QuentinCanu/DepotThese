@@ -15,6 +15,8 @@ Import GRing.Theory Num.Theory.
 
 (* Open Scope ring_scope. *)
 
+Local Notation int63 := Uint63.int.
+
 (* --------------------------------------------------------------------------------------------------- *)
 
 Module Common.
@@ -22,17 +24,17 @@ Module Common.
 (* polyType is the type of the polytope *)
 (* It is a pair of a matrix reprsented by lines and a vector b *)
 Definition polyType := ((array (array bigQ)) * (array bigQ))%type.
- Definition m (Po : polyType) := length Po.1.
- Definition n (Po : polyType) := length Po.1.[0%uint63].
+Definition m (Po : polyType) := length Po.1.
+Definition n (Po : polyType) := length Po.1.[0%uint63].
 
 (* U is the type of perturbed "points" of the lex-graph*) 
 (* It is a matrix represented by columns *)
 Definition U := array (array bigQ).
-Definition lex_label := ((array Uint63.int) * U)%type.
+Definition lex_label := ((array int63) * U)%type.
 Definition lex_mapping := array lex_label.
 
-Definition bas (lbl : lex_mapping) (i : Uint63.int)  := lbl.[i].1.
-Definition point (lbl : lex_mapping) (i : Uint63.int) := lbl.[i].2.
+Definition bas (lbl : lex_mapping) (i : int63)  := lbl.[i].1.
+Definition point (lbl : lex_mapping) (i : int63) := lbl.[i].2.
 Definition compute_test (G : graph) := IFold.iall^~ (length G).
 
 End Common.
@@ -63,7 +65,7 @@ Definition poly_format (Po : Com.polyType):=
       PC.pre_length_computation Po.2 (Com.m Po) &
       PC.pre_mx_computation Po.1 (Com.m Po) (Com.n Po)]. 
 
-Definition basis_format (Po : Com.polyType) (x : array Uint63.int):=
+Definition basis_format (Po : Com.polyType) (x : array int63):=
   PC.pre_arr_set_computation (fun a b=> (a <? b)%uint63)
     (fun i=> (i <? Com.m Po)%uint63) x.
 
@@ -101,7 +103,7 @@ Definition poly_format (Po : Com.polyType):=
     pre_length_computation Po.2 (Com.m Po) &
     pre_mx_computation Po.1 (Com.m Po) (Com.n Po)].
 
-Definition basis_format (Po : Com.polyType) (x : array Uint63.int):=
+Definition basis_format (Po : Com.polyType) (x : array int63):=
   pre_arr_set_computation (fun a b=> (a < b)%O)
     (fun i=> (i < Com.m Po)%O) x.
 
@@ -236,20 +238,20 @@ Module LexCertifComputation.
 
 Section Defs.
 
-Definition sat_ineq (m i : Uint63.int) (a : array bigQ) (b : bigQ) (x : Com.U):=
+Definition sat_ineq (m i : int63) (a : array bigQ) (b : bigQ) (x : Com.U):=
   if (PArrayUtils.fold_pair
       (fun bv xv acc=> if acc is Eq then (bv ?= (BigQUtils.bigQ_dot a xv))%bigQ else acc)
     (BigQUtils.perturbed_line m i b (-1)%bigQ) x Eq) is Gt 
   then false else true. 
 
-Definition sat_eq (m i : Uint63.int) (a : array bigQ) (b : bigQ) (x : Com.U):=
+Definition sat_eq (m i : int63) (a : array bigQ) (b : bigQ) (x : Com.U):=
   BigQUtils.eq_array_bigQ (BigQUtils.bigQ_mul_row_mx a x) 
     (BigQUtils.perturbed_line m i b (-1)%bigQ).
 
 Definition sat_Po (Po : Com.polyType) (x : Com.U) :=
   IFold.iall (fun i => sat_ineq (Com.m Po) i Po.1.[i] Po.2.[i] x) (Com.m Po).
 
-Definition mask_eq (Po : Com.polyType) (m : array Uint63.int) (x : Com.U):=
+Definition mask_eq (Po : Com.polyType) (m : array int63) (x : Com.U):=
   IFold.iall (fun i=> sat_eq (Com.m Po) m.[i] Po.1.[m.[i]] Po.2.[m.[i]] x) (length m).
 
 End Defs.
@@ -258,16 +260,16 @@ Section Body.
 Context (Po : Com.polyType) (G : graph) (lbl : Com.lex_mapping).
 
 (* We test validity of each vertex label*)
-Definition sat_test (i : Uint63.int) := sat_Po Po (Com.point lbl i).
-Definition bas_eq_test (i : Uint63.int) := mask_eq Po (Com.bas lbl i) (Com.point lbl i).
-Definition card_bas_test (i : Uint63.int) := (length (Com.bas lbl i) =? (Com.n Po))%uint63.
-Definition vertex_test (i : Uint63.int) := [&& (card_bas_test i), (sat_test i) & (bas_eq_test i)].
+Definition sat_test (i : int63) := sat_Po Po (Com.point lbl i).
+Definition bas_eq_test (i : int63) := mask_eq Po (Com.bas lbl i) (Com.point lbl i).
+Definition card_bas_test (i : int63) := (length (Com.bas lbl i) =? (Com.n Po))%uint63.
+Definition vertex_test (i : int63) := [&& (card_bas_test i), (sat_test i) & (bas_eq_test i)].
 
 Definition vertex_consistent := Com.compute_test G vertex_test.
 
 (* We test the graph structure*)
-Definition regularity_test (i : Uint63.int) := (GraphUtils.nb_neighbours G i =? (Com.n Po))%uint63.
-Definition basI_test (i : Uint63.int) := GraphUtils.neighbour_all 
+Definition regularity_test (i : int63) := (GraphUtils.nb_neighbours G i =? (Com.n Po))%uint63.
+Definition basI_test (i : int63) := GraphUtils.neighbour_all 
   (fun j => 
     ((AIC.array_inter 
       (fun i j=> (i <? j)%uint63) (Com.bas lbl i) (Com.bas lbl j)) =? Uint63.pred (Com.n Po))%uint63)
@@ -289,35 +291,35 @@ Module LCA := LexCertifComputation.
 Section LexCertifEquiv.
 Section Def.
 
-Definition sat_ineq (m i : Uint63.int) (a : array bigQ) (b : bigQ) (x : Com.U):=
+Definition sat_ineq (m i : int63) (a : array bigQ) (b : bigQ) (x : Com.U):=
   let pert_b := BigQUtils.perturbed_line m i b (-1)%bigQ in 
   let res := arr_fold_pair
     (fun bv xv acc=> if acc is Eq then (bv ?= (BigQUtils.bigQ_dot a xv))%bigQ else acc)
   pert_b x Eq in
   if res is Gt then false else true. 
 
-Definition sat_eq (m i : Uint63.int) (a : array bigQ) (b : bigQ) (x : Com.U):=
+Definition sat_eq (m i : int63) (a : array bigQ) (b : bigQ) (x : Com.U):=
   let pert_b := BigQUtils.perturbed_line m i b (-1)%bigQ in 
   eq_array_bigQ (bigQ_mul_row_mx a x) pert_b.
 
 Definition sat_Po (Po : Com.polyType) (x : Com.U) :=
   iall (fun i => sat_ineq (Com.m Po) i Po.1.[i] Po.2.[i] x) (Com.m Po).
 
-Definition mask_eq (Po : Com.polyType) (m : array Uint63.int) (x : Com.U):=
+Definition mask_eq (Po : Com.polyType) (m : array int63) (x : Com.U):=
   iall (fun i=> sat_eq (Com.m Po) m.[i] Po.1.[m.[i]] Po.2.[m.[i]] x) (length m).
 
 Context (Po : Com.polyType) (G : graph) (lbl : Com.lex_mapping).
 
-Definition sat_test (i : Uint63.int) := sat_Po Po (Com.point lbl i).
-Definition bas_eq_test (i : Uint63.int) := mask_eq Po (Com.bas lbl i) (Com.point lbl i).
-Definition card_bas_test (i : Uint63.int) := (length (Com.bas lbl i) == (Com.n Po)).
+Definition sat_test (i : int63) := sat_Po Po (Com.point lbl i).
+Definition bas_eq_test (i : int63) := mask_eq Po (Com.bas lbl i) (Com.point lbl i).
+Definition card_bas_test (i : int63) := (length (Com.bas lbl i) == (Com.n Po)).
 
-Definition vertex_test (i : Uint63.int) := [&& (card_bas_test i), (sat_test i) & (bas_eq_test i)].
+Definition vertex_test (i : int63) := [&& (card_bas_test i), (sat_test i) & (bas_eq_test i)].
 
 Definition vertex_consistent := compute_test G vertex_test.
 
-Definition regularity_test (i : Uint63.int) := (nb_neighbours G i == (Com.n Po)).
-Definition basI_test (i : Uint63.int) := neighbour_all 
+Definition regularity_test (i : int63) := (nb_neighbours G i == (Com.n Po)).
+Definition basI_test (i : int63) := neighbour_all 
   (fun j => 
     ((array_inter 
       (fun i j=> (i < j)%O) (Com.bas lbl i) (Com.bas lbl j)) == Uint63.pred (Com.n Po)))
@@ -369,7 +371,7 @@ End LexCertifEquiv.
 
 Section LexCertifProofs.
 
-Lemma sat_ineqP (m i : Uint63.int) (a : array bigQ) (b : bigQ) (u : Com.U) :
+Lemma sat_ineqP (m i : int63) (a : array bigQ) (b : bigQ) (u : Com.U) :
   length u = Uint63.succ m ->
   sat_ineq m i a b u = 
   BQlex_order (BigQUtils.perturbed_line m i b (-1)%bigQ)
@@ -484,14 +486,14 @@ Module DimensionFullComputation.
   the matrix \matrix_k (x_k - x_0)^T is invertible *)
 
 Definition inverse_line_i (lbl : BQvert_mapping) 
-  (map_ : array Uint63.int) (origin : Uint63.int) 
+  (map_ : array int63) (origin : int63) 
   (inv : array (array bigQ)) n i:=
   let: rV_i:= 
     BigQUtils.bigQ_add_rV (lbl.[map_.[i]]) (BigQUtils.bigQ_scal_rV (-1)%bigQ lbl.[origin]) in
   BigQUtils.eq_array_bigQ (BigQUtils.bigQ_mul_row_mx rV_i inv) (BigQUtils.delta_line n i 1%bigQ).
 
 Definition dim_full_test (lbl : BQvert_mapping)
-  (map_ : array Uint63.int) (origin : Uint63.int) (inv : array (array bigQ)) 
+  (map_ : array int63) (origin : int63) (inv : array (array bigQ)) 
   (Po : Com.polyType) :=
     [&& 
       (length map_ =? Com.n Po)%uint63,
@@ -510,7 +512,7 @@ Module DFC := DimensionFullComputation.
 Section DimensionFullEquiv.
 
 Definition inverse_line_i (lbl : BQvert_mapping) 
-  (map_ : array Uint63.int) (origin : Uint63.int) 
+  (map_ : array int63) (origin : int63) 
   (inv : array (array bigQ)) n i:=
   let: rV_i:= 
     bigQ_add_rV (lbl.[map_.[i]]) (bigQ_scal_rV (-1)%bigQ lbl.[origin]) in
@@ -521,13 +523,13 @@ Definition inverse_line_i (lbl : BQvert_mapping)
   (length inv == (Com.n Po)) &&
   arr_all (fun line=> (length line == (Com.n Po))) inv.
 
-Definition map_test (lbl : BQvert_mapping) (map_ : array Uint63.int) (Po : Com.polyType):=
+Definition map_test (lbl : BQvert_mapping) (map_ : array int63) (Po : Com.polyType):=
   [&& (length map_ == (Uint63.succ (Com.n Po))),
       arr_all (fun x=> (x < length lbl)%O) map_ &
       is_lti_sorted map_]. *)
 
 Definition dim_full_test (lbl : BQvert_mapping)
-  (map_ : array Uint63.int) (origin : Uint63.int) (inv : array (array bigQ)) 
+  (map_ : array int63) (origin : int63) (inv : array (array bigQ)) 
   (Po : Com.polyType) :=
   [&&
     (length map_ == Com.n Po), 

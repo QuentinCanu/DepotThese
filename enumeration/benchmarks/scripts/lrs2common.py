@@ -111,21 +111,20 @@ def rank_1_update(A,inv,I,J):
             res[r] = inv[s] / Ars
     return res
 
-def from_inverse_to_lbl(n,bases,vertices,inverses):
-    res = []
-    for vtx, inv in zip(vertices,inverses):
-        translate = [list_of_gmp_matrix(- col)[0] if col is not None else ["0" for _ in range(n)] for col in inv]
-        res.append([vtx] + translate)
-    return list(zip(bases,res))
+# def from_inverse_to_lbl(n,bases,vertices,inverses):
+#     res = []
+#     for vtx, inv in zip(vertices,inverses):
+#         translate = [list_of_gmp_matrix(- col)[0] if col is not None else ["0" for _ in range(n)] for col in inv]
+#         res.append([vtx] + translate)
+#     return list(zip(bases,res))
         
-def get_lbl_lex(A,bases,vertices,graph,root=0):
+def get_inverses(A,bases,graph,root=0):
     graph_lex = nx.Graph({i:edges for i,edges in enumerate(graph)})
     inverses = [None for _ in bases]
     inverses[root] = get_initial_inverse(A,bases[root])
     for (node,pred) in tqdm.tqdm(nx.bfs_predecessors(graph_lex,root), desc="Computation of the labels of the lex-feasible bases graph : "):
         inverses[node] = rank_1_update(A,inverses[pred],bases[pred],bases[node])
-    lbl = from_inverse_to_lbl(len(A[0]),bases, vertices,inverses)
-    return lbl
+    return [[list_of_gmp_matrix(col)[0] for col in inv if col is not None] for inv in inverses]
 
 # Construct the graph of vertices + certificates related to the image graph
 # -------------------------------------------------------------------
@@ -193,42 +192,42 @@ START_BFS = {"poly20dim21" : 394, "poly23dim24" : 7200}
 
 # Debug functions
 # -------------------------------------------------------------------
-def lex_order_gmp(A,B):
-    p,q = A.shape
-    for i in range(p):
-        for j in range(q):
-            if A[i,j].element < B[i,j].element:
-                return False, i
-            if A[i,j].element > B[i,j].element:
-                break
-    return True, None
+# def lex_order_gmp(A,B):
+#     p,q = A.shape
+#     for i in range(p):
+#         for j in range(q):
+#             if A[i,j].element < B[i,j].element:
+#                 return False, i
+#             if A[i,j].element > B[i,j].element:
+#                 break
+#     return True, None
 
 
-def lbl_lex_debug(A,b,lbl_lex,trials):
-    print("Debug function : verifies that all given bases are lex-feasible")
-    m = len(A)
-    gmp_A = fk.to_gmp_matrix(A)
-    b_pert = [[x] + [- int(k==i) for k in range(m)] for i,x in enumerate(b)]
-    gmp_b_pert = fk.to_gmp_matrix(b_pert)
-    concerned_vertices = {}
-    res = []
-    for i in tqdm.tqdm(range(trials), desc="Attempts to find non-feasible lex-bases"):
-        basis, point = lbl_lex[i]
-        gmp_X = fk.to_gmp_matrix([[fc.Fraction(x) for x in col] for col in point]).transpose()
-        test, line = lex_order_gmp(gmp_A * gmp_X, gmp_b_pert)
-        if not test:
-            print(f"{basis} is not lex-feasible")
-            print(gmp_X.transpose())
-            print("line : ", line)
+# def lbl_lex_debug(A,b,lbl_lex,trials):
+#     print("Debug function : verifies that all given bases are lex-feasible")
+#     m = len(A)
+#     gmp_A = fk.to_gmp_matrix(A)
+#     b_pert = [[x] + [- int(k==i) for k in range(m)] for i,x in enumerate(b)]
+#     gmp_b_pert = fk.to_gmp_matrix(b_pert)
+#     concerned_vertices = {}
+#     res = []
+#     for i in tqdm.tqdm(range(trials), desc="Attempts to find non-feasible lex-bases"):
+#         basis, point = lbl_lex[i]
+#         gmp_X = fk.to_gmp_matrix([[fc.Fraction(x) for x in col] for col in point]).transpose()
+#         test, line = lex_order_gmp(gmp_A * gmp_X, gmp_b_pert)
+#         if not test:
+#             print(f"{basis} is not lex-feasible")
+#             print(gmp_X.transpose())
+#             print("line : ", line)
 
-def print_lbl_lex(lbl_lex):
-    for base, point in lbl_lex:
-        print("Base : ", [i + 1 for i in base])
-        print("Point : ",  point[0])
-        print("Inverse : ")
-        for i in range(len(point[0])):
-            print([point[j+1][i] for j in base])
-        print()
+# def print_lbl_lex(lbl_lex):
+#     for base, point in lbl_lex:
+#         print("Base : ", [i + 1 for i in base])
+#         print("Point : ",  point[0])
+#         print("Inverse : ")
+#         for i in range(len(point[0])):
+#             print([point[j+1][i] for j in base])
+#         print()
 
 
 
@@ -241,35 +240,34 @@ def optparser():
     return parser
 
 # -------------------------------------------------------------------
-def lrs2dict(name, hirsch=False):
+def lrs2common(name, hirsch=False):
 
     # Compute everything
     A,b = get_polyhedron_from_lrs(name)
-    bases, dupl_vertices = get_bases_from_lrs(name)
+    bases, vertices = get_bases_from_lrs(name)
     G_lex = get_lex_graph(len(A), len(A[0]), bases)
-    lbl_lex = get_lbl_lex(A,bases,dupl_vertices,G_lex)
-    # lbl_lex_debug(A,b,lbl_lex,len(lbl_lex)) #Todo : to use on birkhoff_4
-    # print_lbl_lex(lbl_lex) #also in case of debug
-    print(f"Computation of the vertex-edge graph together with image graph certificates : ", end="", flush=True)
-    st = time.time()
-    lbl_vtx = get_lbl_vtx(dupl_vertices)
-    morph, morph_inv = get_morph(bases, dupl_vertices, lbl_vtx)
-    G_vtx = get_graph_vtx(G_lex,morph,len(lbl_vtx))
-    edge_inv = get_edge_inv(G_lex,G_vtx,morph)
-    et = time.time()
-    print(f"{et - st:.2f}s")
+    inverses = get_inverses(A,bases,G_lex)
     print(f"Computation of the certificates of boundedness : ", end="", flush=True)
     st = time.time()
     bound_pos, bound_neg = get_farkas_cert(A,len(A),len(A[0]))
     et = time.time()
     print(f"{et - st:.2f}s")
+    # lbl_lex_debug(A,b,lbl_lex,len(lbl_lex)) #Todo : to use on birkhoff_4
+    # print_lbl_lex(lbl_lex) #also in case of debug
+    # print(f"Computation of the vertex-edge graph together with image graph certificates : ", end="", flush=True)
+    # st = time.time()
+    # morph, morph_inv = get_morph(bases, dupl_vertices, lbl_vtx)
+    # G_vtx = get_graph_vtx(G_lex,morph,len(lbl_vtx))
+    # edge_inv = get_edge_inv(G_lex,G_vtx,morph)
+    # et = time.time()
+    # print(f"{et - st:.2f}s")
 
     
     # Hirsch specific certificates
     if hirsch:
         print(f"Computation of the certficates of full-dimensionality : ", end="", flush=True)
         st = time.time()
-        origin, map_dim, inv_dim = make_dim_full(lbl_vtx, len(A[0]))
+        origin, map_dim, inv_dim = make_dim_full(vertices, len(A[0]))
         et = time.time()
         print(f"{et - st:.2f}s")
         start=0
@@ -280,14 +278,12 @@ def lrs2dict(name, hirsch=False):
 
     # # Store in a dictionnary
     tgtdir =   {
-                "Po"        : (A,b),
-                "lbl_lex"   : lbl_lex,
-                "lbl_vtx"   : lbl_vtx,
+                "A"         : A,
+                "b"         : b,
+                "bases"     : bases,
+                "vertices"  : vertices,
                 "G_lex"     : G_lex,
-                "G_vtx"     : G_vtx,
-                "morph"     : morph,
-                "morph_inv" : morph_inv,
-                "edge_inv"  : edge_inv,
+                "inverses"  : inverses,
                 "bound_pos" : bound_pos,
                 "bound_neg" : bound_neg
                 }
