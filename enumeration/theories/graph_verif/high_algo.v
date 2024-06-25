@@ -56,7 +56,7 @@ Definition inter_verification (e e': enum_type) := (#|e.1 :&: e'.1| == n').
 Definition reg_verification (e : enum_type) := #|` successors G e| == n.
 Definition struct_verification (e : enum_type) := reg_verification e && all (inter_verification e) (successors G e).
 
-Definition high_enum_algo := 
+Definition high_lex_certif_algo := 
   all vertex_verification (vertices G) &&
   all struct_verification (vertices G).
 
@@ -197,7 +197,7 @@ Section LexCertif.
 
 Context (G_lex : graph (enum_type)).
 Hypothesis G_lex_n0 : G_lex != graph0 _.
-Hypothesis G_lex_verif : high_enum_algo G_lex.
+Hypothesis G_lex_verif : high_lex_certif_algo G_lex.
 
 Lemma G_lex_vtx : all (vertex_verification) (vertices G_lex).
 Proof. by case/andP: G_lex_verif. Qed.
@@ -247,7 +247,7 @@ Context (A : 'M[rat]_(m,n)) (b : 'cV[rat]_m).
 Local Notation P := (poly_of_syst (A,b)).
 
 Hypothesis P_compact : compact P.
-Hypothesis G_lex_verif : high_enum_algo A b G_lex.
+Hypothesis G_lex_verif : high_lex_certif_algo A b G_lex.
 Hypothesis G_lex_n0 : G_lex != graph0 _.
 
 Definition phi (e : enum_type m' n') := col 0 e.2.
@@ -404,7 +404,7 @@ Context (x0 : 'cV[rat]_n) (M W : 'M[rat]_n).
 
 Local Notation P := (poly_of_syst (A,b)).
 
-Hypothesis enum_h : high_enum_algo A b G_lex.
+Hypothesis enum_h : high_lex_certif_algo A b G_lex.
 Hypothesis img_h : G_vert = ((@phi m' n') @/ G_lex).
 Hypothesis poly_bound : high_poly_bounded A Y_pos Y_neg.
 Hypothesis G_lex_prop0 : G_lex != graph0 _.

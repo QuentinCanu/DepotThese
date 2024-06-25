@@ -302,7 +302,7 @@ def write_json(tgtjson):
         json.dump(tgtjson, stream, indent=2)
 
 def main(name,hirsch):
-    write_json(lrs2dict(name,hirsch))
+    write_json(lrs2common(name,hirsch))
 
 # -------------------------------------------------------------------
 if __name__ == '__main__':
