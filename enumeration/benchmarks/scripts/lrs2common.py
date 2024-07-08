@@ -245,8 +245,8 @@ def lrs2common(name, hirsch=False):
     # Compute everything
     A,b = get_polyhedron_from_lrs(name)
     bases, vertices = get_bases_from_lrs(name)
-    G_lex = get_lex_graph(len(A), len(A[0]), bases)
-    inverses = get_inverses(A,bases,G_lex)
+    g_lex = get_lex_graph(len(A), len(A[0]), bases)
+    inverses = get_inverses(A,bases,g_lex)
     print(f"Computation of the certificates of boundedness : ", end="", flush=True)
     st = time.time()
     bound_pos, bound_neg = get_farkas_cert(A,len(A),len(A[0]))
@@ -277,36 +277,20 @@ def lrs2common(name, hirsch=False):
             print("Only works with Hirsch counterexample : poly20dim21 or poly23dim24")
 
     # # Store in a dictionnary
-    tgtdir =   {
+    tgtdict =   {
                 "A"         : A,
                 "b"         : b,
                 "bases"     : bases,
                 "vertices"  : vertices,
-                "G_lex"     : G_lex,
+                "g_lex"     : g_lex,
                 "inverses"  : inverses,
                 "bound_pos" : bound_pos,
                 "bound_neg" : bound_neg
                 }
     if hirsch:
-        tgtdir["origin"] = origin
-        tgtdir["map_dim"] = map_dim
-        tgtdir["inv_dim"] = inv_dim
-        tgtdir["start"] = start
+        tgtdict["origin"] = origin
+        tgtdict["map_dim"] = map_dim
+        tgtdict["inv_dim"] = inv_dim
+        tgtdict["start"] = start
 
-    return tgtdir
-
-def write_json(tgtjson):
-    tgtdir = core.resource(name)
-
-    with open(os.path.join(tgtdir, f"{name}.json"), "w") as stream:
-        json.dump(tgtjson, stream, indent=2)
-
-def main(name,hirsch):
-    write_json(lrs2common(name,hirsch))
-
-# -------------------------------------------------------------------
-if __name__ == '__main__':
-    args   = optparser().parse_args()
-    name   = args.name
-    hirsch = args.hirsch
-    main(name,hirsch)
+    return tgtdict

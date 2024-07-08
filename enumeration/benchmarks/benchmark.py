@@ -8,7 +8,7 @@ import os
 import re
 import time
 import math
-from scripts import genlrs, lrs2common, dict2bin, bin2coq, dict2text, coqjobs
+from scripts import genlrs, lrs2common, common2certif, dict2bin, bin2coq, dict2text, coqjobs
 import csv
 import shutil
 import json
@@ -18,6 +18,7 @@ TIME_MEM_PREFIX = r'TIMEFMT="%E : real time, %M : max memory" && '
 HIRSCH_CEX = ["poly20dim21","poly23dim24"]
 POLYTOPES = ["cube", "cross", "cyclic", "permutohedron"]
 DATA_DIR = os.path.join(CWD,"data")
+JOB_DIR = os.path.join(CWD,"jobs")
 PARALLEL_DFLT = 10
 NO_BENCH = "------"
 
@@ -28,6 +29,7 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 def command_call(command, prefix=""):
+  print(command)
   try:
     output = sp.run(prefix + command,
             shell=True, executable="/bin/zsh", check=True,
@@ -35,6 +37,7 @@ def command_call(command, prefix=""):
     print(output.stdout, output.stderr)
     return output.stderr
   except:
+    print("ERREUR !")
     return None
 
 def format_time_output(st):
@@ -49,6 +52,12 @@ def format_time_output(st):
 def polytope_name(polytope,param):
   return f"{polytope}_{param}_{2*param}" if polytope == "cyclic" else \
     f"{polytope}" if polytope in HIRSCH_CEX else f"{polytope}_{param}"
+
+def dune_name_certif(name, text = False):
+  return "_".join([name.upper(),"TEXT" if text else "", "DATA"])
+
+def dune_name_algo(name, algo, compute = False):
+  return "_".join([name.upper(),algo.upper(),"CMP" if compute else ""])
 
 # --------------------------------------------------------------------
 def gen(polytope, param):
@@ -82,87 +91,158 @@ def common_certificates(polytope, param):
   return {"time" : et - st}
 
 # --------------------------------------------------------------------
-def certificates_bin(polytope,param):
-  name = polytope_name(polytope,param)
-  certif_path = os.path.join(DATA_DIR,name,"certificates",name+".json")
-  with open(certif_path) as stream:
-    dict = json.load(stream)
+def graph_certif_generation(polytope, param):
+  name = polytope_name(polytope, param)
+  hirsch = name in HIRSCH_CEX
+  common_path_dir = os.path.join(DATA_DIR,name,"certificates","common")
+  common_path = os.path.join(common_path_dir,name+".json")
+  with open(common_path) as stream:
+    common_dict = json.load(stream)
   st = time.time()
-  dict2bin.dict2bin(name,dict)
-  bin2coq.bin2coq(name)
+  res_dict = common2certif.common2certif(common_dict,hirsch)
   et = time.time()
+  path_dir = os.path.join(DATA_DIR,name,"certificates","graph_certif")
+  path = os.path.join(path_dir,name+".json")
+  os.makedirs(path_dir,exist_ok=True)
+  with open(path,"w") as stream:
+    json.dump(res_dict,stream)
   return {"time" : et - st}
 
 # --------------------------------------------------------------------
-def certificates_text(polytope, param):
-  name = polytope_name(polytope,param)
-  certif_path = os.path.join(DATA_DIR,name,"certificates",name+".json")
+def graph_certif_certificates(polytope,param):
+  res = {}
+  name=polytope_name(polytope,param)
+  hirsch = name in HIRSCH_CEX
+  certif_path = os.path.join(DATA_DIR, name, "certificates", "graph_certif", name+".json")
   with open(certif_path) as stream:
-    dict = json.load(stream)
+    certif = json.load(stream)
+
+  binpath = ["data", name,"graph_certif", "bin_certif"]
+
+  bindir = os.path.join(CWD, *binpath)
+  os.makedirs(bindir, exist_ok = True)
   st = time.time()
-  dict2text.dict2text(name,dict)
+  bench = dict2bin.dict2bin(bindir,certif)
   et = time.time()
-  return {"time" : et - st}
+  res["generation of bin certificates"] = {"generation time of bin files" : et - st, "size of bin files" : bench}
+
+  bin2coq.bin2coq(dune_name_certif(name),bindir)
+  res["compilation of bin certificates"] = certif_compilation(bindir, *binpath)
+
+  textpath = ["data", name, "graph_certif", "text_certif"]
+  textdir = os.path.join(CWD, *textpath)
+  os.makedirs(textdir, exist_ok = True)
+  dict2text.dict2text(dune_name_certif(name,True),textdir,certif)
+  res["compilation of text certificates"] = certif_compilation(textdir, *textpath)
+  return res
+
+def certif_compilation(tgtdir, *relpath):
+  res = {}
+  times = []
+  max_memory = -math.inf
+  files = sorted(os.listdir(tgtdir))
+  for file in files:
+    if file.endswith(".v"):
+      print(f"Compiling {file}")
+      rel_path = os.path.join(*relpath,file+"o")
+      st = command_call("time dune build " + rel_path,TIME_MEM_PREFIX)
+      time, memory = format_time_output(st)
+      res[file + " time"] = time
+      res[file + " memory"] = memory
+      times.append(float(time if time is not None else 0.0))
+      max_memory = max(max_memory,float(memory if memory is not None else 0.0))
+  res["total time"] = str(math.fsum(times))
+  res["max memory"] = str(max_memory)
+  return res
+
+
 
 # --------------------------------------------------------------------
-def compilation(text = False):
-  coqname = "coq_text" if text else "coq"
-  def worker(polytope, param):
-    name = polytope_name(polytope, param)
-    coqdir = os.path.join(DATA_DIR, name, coqname)
-    res = {}
-    times = []
-    max_memory = -math.inf
-    files = sorted(os.listdir(coqdir))
-    for file in files:
-      if file.endswith(".v"):
-        print(f"Compiling {file}")
-        rel_path = os.path.join("data",name,coqname,file+"o")
-        st = command_call("time dune build " + rel_path,TIME_MEM_PREFIX)
-        time, memory = format_time_output(st)
-        res[file + " time"] = time
-        res[file + " memory"] = memory
-        times.append(float(time if time is not None else 0.0))
-        max_memory = max(max_memory,float(memory if memory is not None else 0.0))
-    res["total time"] = str(math.fsum(times))
-    res["max memory"] = str(max_memory)
-    return res
-  return worker
+def graph_certif_execution(polytope,param):
+  res = {}
+  name = polytope_name(polytope,param)
+  tgtpath = ["data", name, "graph_certif", "standard"]
+  tgtdir = os.path.join(CWD, *tgtpath)
+  os.makedirs(tgtdir,exist_ok = True)
+  jobdir = os.path.join(JOB_DIR,"graph_certif")
+  coqjobs.coqjob(dune_name_algo(name,"verif"), dune_name_certif(name), "PolyhedraHirschVerif", jobdir, tgtdir)
+  res["Execution of the graph verification algorithm"] = job(tgtdir,*tgtpath)
+
+  tgtpath = ["data", name, "graph_certif", "compute"]
+  tgtdir = os.path.join(CWD,*tgtpath)
+  os.makedirs(tgtdir,exist_ok = True)
+  jobdir = os.path.join(JOB_DIR,"graph_certif_compute")
+  coqjobs.coqjob(dune_name_algo(name,"verif",compute = True), dune_name_certif(name), "PolyhedraHirschVerif", jobdir, tgtdir)
+  res["Execution of the graph verification algorithm, with compute"] = job(tgtdir,*tgtpath)
+  return res
+
+
+def job(jobdir, *relpath):
+  res = {}
+  times = []
+  max_memory = -math.inf
+  files = list(os.listdir(jobdir))
+  files.sort()
+  files.sort(key=f"final.v".__eq__)
+  for file in files:
+    if file.endswith(".v"):
+      rel_path = os.path.join(*relpath, file+"o")
+      st = command_call("time dune build " + rel_path,TIME_MEM_PREFIX)
+      time, memory = format_time_output(st)
+      res[file + " time"] = time
+      res[file + " memory"] = memory
+      times.append(float(time if time is not None else 0.0))
+      max_memory = max(max_memory,float(memory if memory is not None else 0.0))
+  res["total time"] = str(math.fsum(times))
+  res["max memory"] = str(max_memory)
+  return res
+# --------------------------------------------------------------------
+def diameter_execution(polytope,param):
+  res = {}
+  name = polytope_name(polytope,param)
+  tgtpath = ["data", name, "diameter"]
+  tgtdir = os.path.join(CWD,*tgtpath)
+  os.makedirs(tgtdir,exist_ok = True)
+  jobdir = os.path.join(JOB_DIR,"diameter")
+  coqjobs.coqjob(dune_name_algo(name,"diameter"), dune_name_certif(name), "PolyhedraHirsch", jobdir, tgtdir)
+  res["Execution of the diameter algorithm"] = job(tgtdir,*tgtpath)
+  return res
+
+
+# def certificates_bin(polytope,param):
+#   name = polytope_name(polytope,param)
+#   certif_path = os.path.join(DATA_DIR,name,"certificates",name+".json")
+#   with open(certif_path) as stream:
+#     dict = json.load(stream)
+#   st = time.time()
+#   dict2bin.dict2bin(name,dict)
+#   bin2coq.bin2coq(name)
+#   et = time.time()
+#   return {"time" : et - st}
 
 # --------------------------------------------------------------------
-def job(job):
-  def worker(polytope, param):
-    name = polytope_name(polytope, param)
-    coqjobs.main(name,job)
-    res = {}
-    jobdir = os.path.join(DATA_DIR,name,f"coq_{job}")
-    os.makedirs(jobdir,exist_ok=True)
-    times = []
-    max_memory = -math.inf
-    files = list(os.listdir(jobdir))
-    files.sort()
-    files.sort(key=f"{job}.v".__eq__)
-    for file in files:
-      if file.endswith(".v"):
-        rel_path = os.path.join("data",name,f"coq_{job}",file+"o")
-        st = command_call("time dune build " + rel_path,TIME_MEM_PREFIX)
-        time, memory = format_time_output(st)
-        res[file + " time"] = time
-        res[file + " memory"] = memory
-        times.append(float(time if time is not None else 0.0))
-        max_memory = max(max_memory,float(memory if memory is not None else 0.0))
-    res["total time"] = str(math.fsum(times))
-    res["max memory"] = str(max_memory)
-    return res
-  return worker
+# def certificates_text(polytope, param):
+#   name = polytope_name(polytope,param)
+#   certif_path = os.path.join(DATA_DIR,name,"certificates",name+".json")
+#   with open(certif_path) as stream:
+#     dict = json.load(stream)
+#   st = time.time()
+#   dict2text.dict2text(name,dict)
+#   et = time.time()
+#   return {"time" : et - st}
 
-def diameter(polytope,param):
-  if polytope in HIRSCH_CEX:
-    res_Hirsch = job("Hirsch")(polytope,param)
-    res_Exact = job("Exact")(polytope,param)
-    return {"Hirsch" : res_Hirsch, "Exact" : res_Exact}
-  else:
-    return job("Diameter")(polytope,param)
+# # --------------------------------------------------------------------
+
+# # --------------------------------------------------------------------
+
+
+# def diameter(polytope,param):
+#   if polytope in HIRSCH_CEX:
+#     res_Hirsch = job("Hirsch")(polytope,param)
+#     res_Exact = job("Exact")(polytope,param)
+#     return {"Hirsch" : res_Hirsch, "Exact" : res_Exact}
+#   else:
+#     return job("Diameter")(polytope,param)
 
 
 # --------------------------------------------------------------------
@@ -170,7 +250,11 @@ TASKS = {
   "gen" : gen,
   "lrs" : compute_lrs,
   "common_certificates" : common_certificates,
-  "certificates_bin" : certificates_bin,
+  "graph_certif_certificates" : graph_certif_generation,
+  "graph_certif_compilation" : graph_certif_certificates,
+  "graph_certif_execution" : graph_certif_execution,
+  "diameter_execution" : diameter_execution,
+  # "certificates_bin" : certificates_bin,
   # "certificates_text" : certificates_text,
   # "compilation" : compilation(),
   # "compilation_text" : compilation(text = True),
@@ -202,7 +286,7 @@ def create(args):
       res = TASKS[task](polytope, param)
       benchmarks[task] = res
       with open(benchmarks_path, "w") as stream:
-        json.dump(benchmarks,stream)
+        json.dump(benchmarks,stream,indent=0)
     else:
        print(f"The task {task} has already been performed on {name}. Skipped.")
 

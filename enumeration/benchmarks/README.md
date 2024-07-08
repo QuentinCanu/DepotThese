@@ -18,7 +18,21 @@ This directory is organized as follows :
 - `scripts` and `jobs` subdirectories are used internally.
 
 The usage of `benchmark.py` is given by :
-- `benchmark.py clean_data` remove all the entries in `data`, except the H-representation of `poly20dim21` and `poly23dim24`.
+- `benchmark.py create polytope` generates all the benchmarks specific to one polytope. The polytope can be chosen among `cube n|cross n|cyclic n|permutohedron n|poly20dim21|poly23dim24`, where `n` is the underlying space dimension.
+- `benchmark.py clean` resets the folder.
+
+For each folder `polytope` in `data`, it contains after execution of `becnhmark.py` :
+- a file `benchmarks_polytope.json` that contains all the timings and the memory usages of any tasks.
+- a folder `lrs` that contains one file `polytope.ine` and one file `polytope.ext`, ie., the input and the output of `lrs`.
+- a folder `certificates`, composed of:
+  - a folder `common` that contains the certificates common to all tasks. It corresponds to : the matrix `A`, the vector `b`, the list of the lex-feasible `bases`, the associated `vertices`, the lex-graph `G_lex`, the associated `inverses`.
+  - a folder `graph-certif` that contains the certificates used by the graph certification algorithm. It corresponds to : the 
+
+
+
+
+
+<!-- - `benchmark.py clean_data` remove all the entries in `data`, except the H-representation of `poly20dim21` and `poly23dim24`.
 - `benchmark.py clean_coq` is equivalent to `dune clean`.
 - `benchmark.py gen` generate `lrs` H-representation of predefined polytopes. If you require a custom set :
  
@@ -46,4 +60,4 @@ The usage of `benchmark.py` is given by :
     - `diameter`: compute the diameter of the polytopes.
     - `hirsch` and `exact`: for `poly20dim21` and `poly23dim24` only, computes a formal disproof to the Hirsch conjecture and compute a formal proof on the diameter of these polytopes.
   
-  `benchmark.py all` executes all tasks in the correct order. It is the recommended command.
+  `benchmark.py all` executes all tasks in the correct order. It is the recommended command. -->

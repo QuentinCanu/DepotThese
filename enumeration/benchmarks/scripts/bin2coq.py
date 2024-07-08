@@ -6,8 +6,7 @@ import os, sys
 # --------------------------------------------------------------------------------
 DUNE = r'''
 (coq.theory
- (name {name}_DATA)
- (theories Polyhedra PolyhedraHirsch)
+ (name {name})
  (flags -w -ambiguous-paths
         -w -notation-overridden
         -w -redundant-canonical-projection
@@ -19,32 +18,26 @@ def usage_and_exit():
     print(f'Usage: {sys.argv[0]} [NAME]')
     exit(1)
 
-def bin2coq(name):
-    
-    srcdir = os.path.join(os.path.dirname(__file__), '..', 'data', name)
-    tgtdir = os.path.join(srcdir, 'coq')
-    bindir = os.path.join(srcdir,'bin')
-
-    os.makedirs(tgtdir, exist_ok = True)
-
+def bin2coq(duneName, tgtdir):
     def writer(stream):
         def output(str=''): 
             print(str,file=stream)
         return output
+    
+    binfiles = os.listdir(tgtdir)
 
-    for binfile in os.listdir(bindir):
+    for binfile in binfiles:
         certname,ext = os.path.splitext(binfile) 
         if ext != ".bin":
-            print(f"remove any non binary file in {os.path.join(name, 'bin')}")
-            exit(1)
+            continue
         with open(os.path.join(tgtdir,f"{certname}.v"), "w") as stream:
             output = writer(stream)
             output("From BinReader Require Import BinReader.")
             output()
-            output(f'LoadData "../../enumeration/test/data/{name}/bin/{certname}.bin" As {certname}.')
+            output(f'LoadData "{os.path.join(tgtdir,certname)}.bin" As {certname}.')
     
     with open(os.path.join(tgtdir, "dune"), "w") as stream:
-        stream.write(DUNE.format(name = name.upper()))
+        stream.write(DUNE.format(name = duneName))
 
 
 if __name__ == "__main__":

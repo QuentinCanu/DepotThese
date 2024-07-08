@@ -421,7 +421,9 @@ apply/(rel_graph_r_all _ gl_G)=> i V /= ig VG iV; congr andb.
 Qed.
 
 Lemma lex_certif_equiv :
-  lex_certif_algo A_low b_low g l = high_lex_certif_algo A b G.
+  vertex_consistent A_low b_low g l 
+  && struct_consistent A_low g l = 
+  high_lex_certif_algo A b G.
 Proof. congr andb; [exact: vertex_consistent_equiv|exact: struct_consistent_equiv]. Qed.
 
 End LexEquivalence.
@@ -751,7 +753,8 @@ Context (y_pos y_neg : array (array BigQ.bigQ)).
 Hypothesis y_pos_format : bound_format A_low y_pos.
 Hypothesis y_neg_format : bound_format A_low y_neg.
 
-Hypothesis enum_h : lex_certif_algo A_low b_low g_lex l_lex.
+Hypothesis vtx_h : vertex_consistent A_low b_low g_lex l_lex.
+Hypothesis struct_h : struct_consistent A_low g_lex l_lex.
 Hypothesis img_h : img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert.
 Hypothesis bound_h : @bounded_Po_test A_low y_pos y_neg.
 Hypothesis graph_h : lex_graph_n0 g_lex.
@@ -767,7 +770,7 @@ Lemma high_enum_h : high_lex_certif_algo A b G_lex.
 Proof.
 move: (format_poly_precond Po_format) (lex_graph_format_precond Po_format gl_lex_format).
 move/spec_func_poly=> + /spec_func_lex_graph.
-by move/lex_certif_equiv=> /[apply] /= <-.
+move/lex_certif_equiv=> /[apply] /= <-; exact/andP.
 Qed.
 
 Lemma high_graph_h : G_lex != graph0 _.
@@ -872,7 +875,8 @@ Context (y_pos y_neg : array (array BigQ.bigQ)).
 Hypothesis y_pos_format : bound_format A_low y_pos.
 Hypothesis y_neg_format : bound_format A_low y_neg.
 
-Hypothesis enum_h : lex_certif_algo A_low b_low g_lex l_lex.
+Hypothesis vtx_h : vertex_consistent A_low b_low g_lex l_lex.
+Hypothesis struct_h : struct_consistent A_low g_lex l_lex.
 Hypothesis img_h : img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert.
 Hypothesis bound_h : @bounded_Po_test A_low y_pos y_neg.
 Hypothesis graph_h : lex_graph_n0 g_lex.
@@ -889,7 +893,7 @@ Lemma diameter_of_polyXXdimXX k:
 Proof.
 move=> diameter_h.
 have:= (Validation Po_format gl_lex_format gl_vert_format y_pos_format y_neg_format).
-move=> /(_ _ _ _ enum_h img_h bound_h graph_h) ->.
+move=> /(_ _ _ _ vtx_h struct_h img_h bound_h graph_h) ->.
 move: (vert_graph_format_precond Po_format gl_vert_format).
 move/spec_func_vert_graph=> rel_g_vert. 
 rewrite -(rel_graph_diameter rel_g_vert) /=.

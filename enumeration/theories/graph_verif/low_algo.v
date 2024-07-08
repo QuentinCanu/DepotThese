@@ -285,7 +285,7 @@ Definition struct_test i :=
 Definition struct_consistent :=
   Com.compute_test G struct_test.
 
-Definition lex_certif_algo := vertex_consistent && struct_consistent.
+(* Definition lex_certif_algo := vertex_consistent && struct_consistent. *)
 
 End Body.
 End LexCertifComputation.
@@ -335,7 +335,7 @@ Definition struct_test i :=
 Definition struct_consistent :=
   (compute_test G struct_test).
 
-Definition lex_certif_algo := vertex_consistent && struct_consistent.
+(* Definition lex_certif_algo := vertex_consistent && struct_consistent. *)
 
 End Def.
 Section Equiv.
@@ -366,9 +366,9 @@ rewrite /LCA.basI_test neighbour_allE; apply/eq_all=> j.
 by rewrite array_interE eqEint.
 Qed.
 
-Lemma lex_certif_algoE A b g lbl: 
+(* Lemma lex_certif_algoE A b g lbl: 
   LCA.lex_certif_algo A b g lbl = lex_certif_algo A b g lbl.
-Proof. by congr andb; rewrite ?vertex_consistentE ?struct_consistentE //. Qed.
+Proof. by congr andb; rewrite ?vertex_consistentE ?struct_consistentE //. Qed. *)
 
 End Equiv.
 End LexCertifEquiv.

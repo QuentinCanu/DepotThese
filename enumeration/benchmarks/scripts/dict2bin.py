@@ -16,11 +16,12 @@ from . import binreader
 
 # --------------------------------------------------------------------
 DESCRIPTORS = dict(
-    Po        = '([[Q]],[Q])',
-    lbl_lex   = '[([I],[[Q]])]',
-    lbl_vtx = '[[Q]]',
-    G_lex     = '[[I]]',
-    G_vtx   = '[[I]]',
+    A        = '[[Q]]',
+    b       = '[Q]',
+    l_lex   = '[([I],[[Q]])]',
+    l_vtx = '[[Q]]',
+    g_lex     = '[[I]]',
+    g_vtx   = '[[I]]',
     morph      = '[I]',
     morph_inv  = '[I]',
     edge_inv  = '[[(I,I)]]',
@@ -45,21 +46,18 @@ def json2dict(name):
     
     return contents
 
-def dict2bin(name,contents):
-    srcdir = os.path.join(os.path.dirname(__file__), '..', 'data', name)
-    bindir = os.path.join(srcdir, 'bin')
-
-    os.makedirs(bindir, exist_ok = True)
+def dict2bin(tgtdir,contents):
     res = {}
-    for key, descr in tqdm.tqdm(DESCRIPTORS.items(), desc="Serializing certificates : "):
-        if key not in contents:
+    for key in tqdm.tqdm(contents.keys(), desc="Serializing certificates : "):
+        if key not in DESCRIPTORS:
             print(f'Ignoring {key}', file = sys.stderr)
             continue
-        tgtbin = os.path.join(bindir, f'{key}.bin')
+        descr = DESCRIPTORS[key]
+        tgtbin = os.path.join(tgtdir, f'{key}.bin')
         with open(tgtbin, 'w+b') as stream:
             descr.descriptor(stream)
             descr.pickle(contents[key], stream)
-        res[f"Size of {key}.bin"] = float(os.path.getsize(tgtbin)/1000000)
+        res[f"Size of {key}.bin"] = float(os.path.getsize(tgtbin))
     return res
 
 def main(name):

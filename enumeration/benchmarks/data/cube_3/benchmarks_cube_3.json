@@ -1,1 +1,125 @@
-{"gen": "------", "lrs": {"time": "0.05", "memory": "896.0"}, "common_certificates": {"time": 0.09732508659362793}, "certificates_bin": null}
+{
+"gen": "------",
+"lrs": {
+"time": "0.00",
+"memory": "896.0"
+},
+"common_certificates": {
+"time": 0.04593706130981445
+},
+"graph_certif_certificates": {
+"time": 0.0006880760192871094
+},
+"graph_certif_compilation": {
+"generation of bin certificates": {
+"generation time of bin files": 0.006186008453369141,
+"size of bin files": {
+"Size of A.bin": 968.0,
+"Size of b.bin": 296.0,
+"Size of bound_pos.bin": 824.0,
+"Size of bound_neg.bin": 824.0,
+"Size of g_lex.bin": 376.0,
+"Size of l_lex.bin": 9200.0,
+"Size of l_vtx.bin": 1384.0,
+"Size of morph.bin": 96.0,
+"Size of morph_inv.bin": 96.0,
+"Size of g_vtx.bin": 376.0,
+"Size of edge_inv.bin": 664.0
+}
+},
+"compilation of bin certificates": {
+"A.v time": "1.26",
+"A.v memory": "304260.0",
+"b.v time": "0.47",
+"b.v memory": "305076.0",
+"bound_neg.v time": "0.45",
+"bound_neg.v memory": "307180.0",
+"bound_pos.v time": "0.44",
+"bound_pos.v memory": "305332.0",
+"edge_inv.v time": "0.44",
+"edge_inv.v memory": "307524.0",
+"g_lex.v time": "0.45",
+"g_lex.v memory": "303560.0",
+"g_vtx.v time": "0.45",
+"g_vtx.v memory": "303956.0",
+"l_lex.v time": "0.45",
+"l_lex.v memory": "312964.0",
+"l_vtx.v time": "0.45",
+"l_vtx.v memory": "306476.0",
+"morph.v time": "0.44",
+"morph.v memory": "306708.0",
+"morph_inv.v time": "0.45",
+"morph_inv.v memory": "304584.0",
+"total time": "5.75",
+"max memory": "312964.0"
+},
+"compilation of text certificates": {
+"A.v time": "1.28",
+"A.v memory": "327020.0",
+"b.v time": "0.46",
+"b.v memory": "326032.0",
+"bound_neg.v time": "0.46",
+"bound_neg.v memory": "329260.0",
+"bound_pos.v time": "0.47",
+"bound_pos.v memory": "327244.0",
+"edge_inv.v time": "0.48",
+"edge_inv.v memory": "330148.0",
+"g_lex.v time": "0.47",
+"g_lex.v memory": "329972.0",
+"g_vtx.v time": "0.46",
+"g_vtx.v memory": "329240.0",
+"l_lex.v time": "0.47",
+"l_lex.v memory": "348964.0",
+"l_vtx.v time": "0.46",
+"l_vtx.v memory": "328592.0",
+"morph.v time": "0.47",
+"morph.v memory": "329932.0",
+"morph_inv.v time": "0.47",
+"morph_inv.v memory": "322944.0",
+"total time": "5.95",
+"max memory": "348964.0"
+}
+},
+"graph_certif_execution": {
+"Execution of the graph verification algorithm": {
+"bounded_Po_test_r.v time": "1.95",
+"bounded_Po_test_r.v memory": "577908.0",
+"format_r.v time": "1.14",
+"format_r.v memory": "571696.0",
+"img_lex_graph_r.v time": "1.12",
+"img_lex_graph_r.v memory": "577696.0",
+"struct_consistent_r.v time": "1.12",
+"struct_consistent_r.v memory": "572108.0",
+"vertex_consistent_r.v time": "1.11",
+"vertex_consistent_r.v memory": "580324.0",
+"final.v time": "1.18",
+"final.v memory": "589844.0",
+"total time": "7.62",
+"max memory": "589844.0"
+},
+"Execution of the graph verification algorithm, with compute": {
+"bounded_Po_test_r.v time": "1.94",
+"bounded_Po_test_r.v memory": "578448.0",
+"format_r.v time": "1.14",
+"format_r.v memory": "580312.0",
+"img_lex_graph_r.v time": "1.20",
+"img_lex_graph_r.v memory": "581244.0",
+"struct_consistent_r.v time": "1.15",
+"struct_consistent_r.v memory": "578264.0",
+"vertex_consistent_r.v time": "1.16",
+"vertex_consistent_r.v memory": "582268.0",
+"final.v time": "1.17",
+"final.v memory": "590372.0",
+"total time": "7.76",
+"max memory": "590372.0"
+}
+},
+"diameter_execution": {
+"Execution of the diameter algorithm": {
+"diameter.v time": "1.59",
+"diameter.v memory": "551468.0",
+"total time": "1.59",
+"max memory": "551468.0"
+}
+}
+}
