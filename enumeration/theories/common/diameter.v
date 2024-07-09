@@ -3,7 +3,7 @@ From Coq Require Import PArray Uint63.
 Require Import PArith.BinPos PArith.BinPosDef.
 Require Import NArith.BinNat NArith.BinNatDef.
 From Polyhedra Require Import extra_misc.
-From PolyhedraHirsch Require Import extra_array extra_int graph high_graph refinement.
+From PolyhedraHirsch Require Import extra_array extra_int low_graph high_graph refinement.
 
 Set   Implicit Arguments.
 Unset Strict Implicit.
@@ -159,7 +159,7 @@ Module State.
 End State.
 
 Section Diameter.
-Definition BFS_step (g : graph.graph) (st : state * int * N) :=
+Definition BFS_step (g : low_graph.graph) (st : state * int * N) :=
   let: (st, x, k) := st in
 
   let: st :=
@@ -172,7 +172,7 @@ Definition BFS_step (g : graph.graph) (st : state * int * N) :=
   | None    => inr st
   end.
 
-Definition BFS_ (g : graph.graph) (x : int) :=
+Definition BFS_ (g : low_graph.graph) (x : int) :=
   let: out := BFS_step g (State.mk (PArray.length g) x, x, 0%N) in
   let: out := IFold.iofold
     (fun _ s => BFS_step g s)
@@ -180,10 +180,10 @@ Definition BFS_ (g : graph.graph) (x : int) :=
     out in
   if out is inr v then Some v else None.
 
-Definition BFS (g : graph.graph) (x : int) :=
+Definition BFS (g : low_graph.graph) (x : int) :=
   odflt 0%N (omap (fun x => x.(maxpath)) (BFS_ g x)).
 
-Definition diameter_BFS (g : graph.graph) :=
+Definition diameter_BFS (g : low_graph.graph) :=
   IFold.ifold (fun i v=> N.max v (BFS g i)) (length g) 0%N.
 
 End Diameter.
@@ -192,7 +192,7 @@ End DiameterComputation.
 Module DC := DiameterComputation.
 
 Section DiameterEquiv.
-Definition BFS_step (g : graph.graph) (st : DC.state * int * N) :=
+Definition BFS_step (g : low_graph.graph) (st : DC.state * int * N) :=
   let: (st, x, k) := st in
 
   let: st :=
@@ -205,7 +205,7 @@ Definition BFS_step (g : graph.graph) (st : DC.state * int * N) :=
   | None    => inr st
   end.
 
-Definition BFS_ (g : graph.graph) (x : int) :=
+Definition BFS_ (g : low_graph.graph) (x : int) :=
   let: out := BFS_step g (DC.State.mk (PArray.length g) x, x, 0%N) in
    let: out := iofold
       (fun _ s => BFS_step g s)
@@ -213,15 +213,15 @@ Definition BFS_ (g : graph.graph) (x : int) :=
       out in
     if out is inr v then Some v else None.
 
-Definition BFS (g : graph.graph) (x : int) :=
+Definition BFS (g : low_graph.graph) (x : int) :=
   odflt 0%N (omap (fun x => x.(DC.maxpath)) (BFS_ g x)).
 
-Definition diameter_BFS (g : graph.graph) :=
+Definition diameter_BFS (g : low_graph.graph) :=
   ifold (fun i v=> N.max v (BFS g i)) (length g) 0%N.
 
 Section Equiv.
 
-Lemma BFSE (g : graph.graph) x:
+Lemma BFSE (g : low_graph.graph) x:
   DC.BFS g x = BFS g x.
 Proof.
 rewrite /DC.BFS /BFS.
@@ -234,7 +234,7 @@ apply/eq_foldl=> + j; case=> // -[[]] ??? /=.
 by rewrite neighbour_foldE.
 Qed.
 
-Lemma low_diameterE (g : graph.graph):
+Lemma low_diameterE (g : low_graph.graph):
   DC.diameter_BFS g = diameter_BFS g.
 Proof.
 rewrite /DC.diameter_BFS /diameter_BFS.
@@ -338,7 +338,7 @@ End HighDiameter.
 
 Section RelStruct.
 
-Context (g : graph.graph) (G : high_graph.graph [choiceType of Uint63.int]).
+Context (g : low_graph.graph) (G : high_graph.graph [choiceType of Uint63.int]).
 Hypothesis gG : rel_structure g G.
 
 Section RelDef.

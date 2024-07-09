@@ -273,7 +273,7 @@ Context (A : 'M[R]_(m,n)) (b : 'cV[R]_m).
 
 Definition lex_graph := mk_graph [fset x | x : Simplex.lex_feasible_basis A b] (fun I J : Simplex.lex_feasible_basis A b =>  set_adjacence n I J).
 
-Section EquivGraphLexi.
+Section LexGraphProofs.
 
 Lemma splx_adj_sym I J: (@set_adjacence n m I J) -> (@set_adjacence n m J I).
 Proof. by rewrite /set_adjacence setIC. Qed.
@@ -292,7 +292,9 @@ move=> adj_IJ; apply: contraT; rewrite negbK=> /eqP IJ.
 by move: adj_IJ; rewrite IJ (negPf (splx_adj_xx I)).
 Qed.
 
-Section SplxGraphConnected.
+Section LexGraphConnected.
+
+Section MkPath.
 
 Context (I J : Simplex.lex_feasible_basis A b).
 
@@ -359,14 +361,21 @@ under eq_path => [x y] do rewrite edge_mk_graph ?inE // splx_adj_neq.
 exact:simplex_lex_exec_adj.
 Qed.
 
-Program Definition conn_splx_gpath := @GPath _ lex_graph I J (simplex_lex_exec (obj_conn^T) I) _ _ _.
+Program Definition conn_lex_gpath := @GPath _ lex_graph I J (simplex_lex_exec (obj_conn^T) I) _ _ _.
 Next Obligation. by rewrite vtx_mk_graph in_fsetE. Qed.
 Next Obligation. exact:path_to_J. Qed.
 Next Obligation. exact/eqP/opt_is_J. Qed.
 
-End SplxGraphConnected.
+End MkPath.
 
-Section SplxGraphRegular.
+Lemma lex_graph_connected : connected lex_graph.
+Proof. by move=> I J _ _; exists (conn_lex_gpath I J). Qed.
+
+End LexGraphConnected.
+
+Section LexGraphRegular.
+
+Section MkNeigh.
 
 Context (I : Simplex.lex_feasible_basis A b).
 Hypothesis (P_compact : forall c, Simplex.bounded A b c).
@@ -379,7 +388,7 @@ exists (Simplex.point_of_basis b I).
 exact: (Simplex.lex_feasible_basis_is_feasible I).
 Qed.
 
-Section MkNeigh.
+Section NeighDef.
 
 Context (i : 'I_#|I|).
 
@@ -411,9 +420,9 @@ rewrite set0U cardsD (elimT setIidPr) ?sub1set ?enum_valP //.
 by rewrite Simplex.prebasis_card cards1 subn1.
 Qed.
 
-End MkNeigh.
+End NeighDef.
 
-Section MkInj.
+Section NeighInj.
 
 Lemma neigh_reg_inj: injective neigh_reg.
 Proof.
@@ -431,8 +440,8 @@ have/negPf -> /=: (enum_val i != j') by
 by move/esym/negbFE/eqP/enum_val_inj.
 Qed.
 
-End MkInj.
-Section MkSucc.
+End NeighInj.
+Section NeighSurj.
 
 Lemma splx_adj_witness (J : Simplex.lex_feasible_basis A b):
   (@set_adjacence n m I J) -> exists i j,
@@ -482,22 +491,20 @@ apply/idP/idP; rewrite splx_adj_neq.
 - case/neigh_reg_surj=> i ->; exact/in_imfset.
 - case/imfsetP=> /= i _ ->; exact/neigh_reg_adj.
 Qed.
-End MkSucc.
-
-End SplxGraphRegular.
-
-Lemma lex_graph_connected : connected lex_graph.
-Proof. by move=> I J _ _; exists (conn_splx_gpath I J). Qed.
+End NeighSurj.
+End MkNeigh.
 
 Lemma lex_graph_regular : (forall c, Simplex.bounded A b c) -> 
   regular lex_graph n.
 Proof.
 move=> P_bounded.
-move=> I _; rewrite succ_reg card_imfset ?size_enum_ord ?Simplex.prebasis_card //.
+move=> I _. rewrite succ_reg card_imfset ?size_enum_ord ?Simplex.prebasis_card //.
 exact: neigh_reg_inj.
 Qed.
 
-End EquivGraphLexi.
+End LexGraphRegular.
+
+End LexGraphProofs.
 
 End LexGraph.
 

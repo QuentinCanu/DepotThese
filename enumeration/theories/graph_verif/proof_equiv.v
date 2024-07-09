@@ -2,7 +2,7 @@ From mathcomp Require Import all_ssreflect all_algebra finmap.
 From Coq Require Import Uint63 PArray.
 From Polyhedra Require Import extra_misc inner_product extra_matrix vector_order affine row_submx barycenter.
 From Polyhedra Require Import lrel polyhedron poly_base simplex.
-From PolyhedraHirsch Require Import graph high_graph img_graph extra_array extra_int rat_bigQ array_set diameter refinement extra_simplex.
+From PolyhedraHirsch Require Import low_graph high_graph img_graph extra_array extra_int rat_bigQ array_set diameter refinement extra_simplex.
 Require Import low_algo high_algo.
 Require Import NArith.BinNat NArith.BinNatDef.
 From Bignums Require Import BigQ.
@@ -300,7 +300,7 @@ Context (A_low : Com.matrix) (b_low : Com.vector) (A : 'M[rat]_(m,n)) (b : 'cV[r
 
 Hypothesis Po_Ab : rel_poly (A_low,b_low) (A,b).
 
-Context (g : graph.graph) (l : Com.lex_mapping).
+Context (g : low_graph.graph) (l : Com.lex_mapping).
 Context (G : high_graph.graph (enum_type m' n')).
 
 Hypothesis gl_G : rel_lex_graph (g, l) G.
@@ -435,12 +435,12 @@ Section ImgGraphEquivalence.
 
 Context (m' n' : nat).
 
-Context (g_lex : graph.graph) (l_lex : Com.lex_mapping).
+Context (g_lex : low_graph.graph) (l_lex : Com.lex_mapping).
 Context (G_lex : high_graph.graph (enum_type m' n')).
 
 Hypothesis gG_lex : rel_lex_graph (g_lex, l_lex) G_lex.
 
-Context (g_vert : graph.graph) (l_vert : array (array (BigQ.bigQ))).
+Context (g_vert : low_graph.graph) (l_vert : array (array (BigQ.bigQ))).
 Context (G_vert : high_graph.graph ([choiceType of 'cV[rat]_n'.+1])).
 
 Hypothesis gG_vert : rel_vert_graph (g_vert, l_vert) G_vert.
@@ -634,7 +634,7 @@ Context (origin : Uint63.int) (map_ : array Uint63.int).
 Context (inv : array (array bigQ)) (Inv : 'M[rat]_n).
 Hypothesis invInv: rel_inv inv Inv.
 
-Context (g : graph.graph) (l : Com.vtx_mapping).
+Context (g : low_graph.graph) (l : Com.vtx_mapping).
 Context (G : high_graph.graph [choiceType of 'cV[rat]_n]).
 Hypothesis glG : rel_vert_graph (g,l) G.
 
@@ -691,7 +691,7 @@ move=> g G gG; apply/idP/idP.
     * rewrite (rel_struct_card gG); exact/int_thresholdP.
 Qed.
 
-Context {g : graph.graph} (l : array (array bigQ)).
+Context {g : low_graph.graph} (l : array (array bigQ)).
 Context (G : graph [choiceType of 'cV[rat]_n]).
 Hypothesis gG: rel_vert_graph (g,l) G.
 Context (x : int).
@@ -740,10 +740,10 @@ Hypothesis Po_format : poly_format A_low b_low.
 Local Notation m' := (Com.m A_low).-1.
 Local Notation n' := (Com.n A_low).-1.
 
-Context (g_lex : graph.graph) (l_lex : Com.lex_mapping).
+Context (g_lex : low_graph.graph) (l_lex : Com.lex_mapping).
 Hypothesis gl_lex_format : lex_graph_format A_low g_lex l_lex.
 
-Context (g_vert : graph.graph) (l_vert : array (array BigQ.bigQ)).
+Context (g_vert : low_graph.graph) (l_vert : array (array BigQ.bigQ)).
 Hypothesis gl_vert_format : vtx_graph_format A_low g_vert l_vert.
 
 Context (morph morph' : array Uint63.int). 
@@ -803,7 +803,7 @@ Proof. exact/high_poly_boundedP/high_bound_h. Qed.
 Lemma Validation: poly_graph P = G_vert.
 Proof.
 rewrite high_img_h.
-apply/repr_poly_graph; 
+apply/poly_graph_certification; 
   [ exact: P_compact|exact: high_enum_h|exact: high_graph_h].
 Qed.
 
@@ -862,10 +862,10 @@ Context (A_low : Com.matrix) (b_low : Com.vector).
 Hypothesis Po_format : poly_format A_low b_low.
 Local Notation m' := (Com.m A_low).-1.
 Local Notation n' := (Com.n A_low).-1.
-Context (g_lex : graph.graph) (l_lex : Com.lex_mapping).
+Context (g_lex : low_graph.graph) (l_lex : Com.lex_mapping).
 Hypothesis gl_lex_format : lex_graph_format A_low g_lex l_lex.
 
-Context (g_vert : graph.graph) (l_vert : array (array BigQ.bigQ)).
+Context (g_vert : low_graph.graph) (l_vert : array (array BigQ.bigQ)).
 Hypothesis gl_vert_format : vtx_graph_format A_low g_vert l_vert.
 
 Context (morph morph' : array Uint63.int). 

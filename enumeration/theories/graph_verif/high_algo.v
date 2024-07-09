@@ -2,7 +2,7 @@ From mathcomp Require Import all_ssreflect all_algebra finmap.
 From Coq Require Import Uint63 PArray.
 From Polyhedra Require Import extra_misc inner_product extra_matrix vector_order affine row_submx barycenter.
 From Polyhedra Require Import lrel polyhedron poly_base simplex.
-From PolyhedraHirsch Require Import graph high_graph img_graph extra_array extra_int rat_bigQ diameter refinement extra_simplex lex_poly_graph.
+From PolyhedraHirsch Require Import high_graph img_graph extra_array extra_int rat_bigQ diameter refinement extra_simplex lex_poly_graph.
 (* Require Import low_algo high_proof proof_equiv. *)
 
 Set   Implicit Arguments.
@@ -21,23 +21,8 @@ Local Notation n := n'.+1.
 
 Context (A : 'M[rat]_(m,n)) (b : 'cV[rat]_m).
 Local Notation b_pert := (Simplex.b_pert b).
-
-(* Context (G : graph (enum_type m' n')). *)
-
-(* Hypothesis enum_h_r : high_enum_algo A b G. *)
 Hypothesis P_compact : forall c, Simplex.bounded A b c.
-(* Hypothesis G_prop0 : G != (graph0 (enum_type m' n')). *)
 
-(* Lemma enum_h :
-  [forall e : vertices G,
-    [&& card_verification (fsval e),
-        feas_verification A b (fsval e),
-        bas_verification A b (fsval e),
-        reg_verification G (fsval e) &
-        [forall e' : successors G (fsval e), inter_verification (fsval e) (fsval e')]
-    ]
-  ].
-Proof. by move: enum_h_r; rewrite high_enum_algoE. Qed. *)
 
 Section Def.
 
@@ -66,7 +51,6 @@ Section ConstructFeasbas.
 
 Context (e : enum_type).
 Hypothesis vertex_e: vertex_verification e. 
-(* Hypothesis IxG : e \in (vertices G). *)
 
 Local Notation I := e.1.
 Local Notation X := e.2.
@@ -218,7 +202,7 @@ Qed.
 
 Local Notation to_feas_bas := (to_feas_bas G_lex_n0 G_lex_vtx).
 
-Lemma repr_lex_graph: gisof G_lex (lex_graph A b) to_feas_bas.
+Lemma lex_graph_certification: gisof G_lex (lex_graph A b) to_feas_bas.
 Proof.
 apply/sub_gisof=> //.
 - exact: to_feas_bas_inj.
@@ -267,11 +251,11 @@ Proof. by exact/(img_lex_graph_poly_graph P_compact). Qed.
 
 Lemma G_lex_repr : gisof G_lex (lex_graph A b) (to_feas_bas G_lex_n0 (G_lex_vtx G_lex_verif)).
 Proof.
-apply/repr_lex_graph=> c; rewrite -boundedE.
+apply/lex_graph_certification=> c; rewrite -boundedE.
 move/(compactP P_feas): P_compact; exact.
 Qed.
 
-Lemma repr_poly_graph : poly_graph P = (phi @/ G_lex).
+Lemma poly_graph_certification : poly_graph P = (phi @/ G_lex).
 Proof.
 apply/esym/(gisof_diagram _ G_lex_repr _ high_img); [|exact:erefl].
 move=> x xG_lex /=; rewrite Simplex.rel_points_of_basis.
@@ -425,7 +409,7 @@ Theorem high_algo_Hirsch :
 Proof.
 have P_compact : compact P by exact/high_poly_boundedP/poly_bound.
 have G_vert_poly: poly_graph P = G_vert.
-- rewrite img_h; apply: repr_poly_graph.
+- rewrite img_h; apply: poly_graph_certification.
   + exact: P_compact.
   + exact: enum_h.
   + exact: G_lex_prop0.

@@ -3,7 +3,7 @@ From Coq      Require Import PArray Uint63.
 From mathcomp Require Import all_ssreflect all_algebra finmap.
 
 From Polyhedra Require Import extra_misc vector_order inner_product.
-From PolyhedraHirsch Require Import extra_int extra_array graph high_graph.
+From PolyhedraHirsch Require Import extra_int extra_array low_graph high_graph.
 
 Require Import NArith.BinNat NArith.BinNatDef.
 
@@ -1011,7 +1011,7 @@ End PolyRel.
 
 Section RelGraphStructure.
 
-Definition precond_struct (g : graph.graph) := 
+Definition precond_struct (g : low_graph.graph) := 
   forall i, mem_vertex g i -> 
   (lti_sorted (neighbours g i) /\ 
     forall j, (j < nb_neighbours g i)%O -> 
@@ -1123,7 +1123,7 @@ Section RelGraph.
 Context {t : Type} (T : choiceType).
 Context {r : t -> T -> Prop}.
 
-Definition precond_lbl_graph {t : Type} (gl : graph.graph * array t):=
+Definition precond_lbl_graph {t : Type} (gl : low_graph.graph * array t):=
   (length gl.1 = length gl.2).
 
 Definition rel_lbl_graph gl GL := precond_lbl_graph gl /\ (rel_couple (rel_structure) (rel_array r)) gl GL.
@@ -1430,7 +1430,7 @@ End ArraySet.
 
 Section Graph.
 
-Definition graph_to_high (g : graph.graph):=
+Definition graph_to_high (g : low_graph.graph):=
   mk_graph ([fset i | i in irange0 (length g)]) 
   (fun i j=> mem_edge g i j).
 
@@ -1492,7 +1492,7 @@ Qed.
 
 Definition precond_graph {T : Type} 
   (ltt : rel T) (P : T -> Prop)
-  (gl : graph.graph * array T):=
+  (gl : low_graph.graph * array T):=
   rel_sorted ltt gl.2 /\
   precond_lbl_graph gl /\ 
   (precond_struct gl.1 /\ precond_array P gl.2).
@@ -1526,14 +1526,14 @@ End SpecFunc.
 
 Module PrecondComputation.
 
-Definition pre_struct_computation (g : graph.graph) :=
+Definition pre_struct_computation (g : low_graph.graph) :=
   IFold.iall (fun i=> 
     PArrayUtils.is_lti_sorted (GraphUtils.neighbours g i) &&
     PArrayUtils.all (fun j=> GraphUtils.mem_vertex g j && ~~(j =? i)%uint63) (GraphUtils.neighbours g i)) 
   (length g).
 
 Definition pre_lbl_graph_computation {T : Type} 
-  (g : graph.graph) (l : array T):=
+  (g : low_graph.graph) (l : array T):=
   (length g =? length l)%uint63.
 
 Definition pre_array_computation {T : Type} (f : T -> bool) (a : array T):=
@@ -1550,7 +1550,7 @@ Definition pre_ord_computation (x m : Uint63.int):=
 
 Definition pre_graph_computation {T : Type}
   (ltT : rel T) (f : T -> bool)
-  (g : graph.graph) (l : array T) :=
+  (g : low_graph.graph) (l : array T) :=
   [&& PArrayUtils.is_sorted_rel ltT l,
       pre_lbl_graph_computation g l,
       pre_struct_computation g &
@@ -1567,14 +1567,14 @@ Module PC := PrecondComputation.
 
 Section PrecondEquiv.
 
-Definition pre_struct_computation (g : graph.graph) :=
+Definition pre_struct_computation (g : low_graph.graph) :=
   iall (fun i=> 
     is_lti_sorted (neighbours g i) &&
     arr_all (fun j=> mem_vertex g j && (j != i)) (neighbours g i)) 
   (length g).
 
 Definition pre_lbl_graph_computation {T : Type} 
-  (g : graph.graph) (l : array T):=
+  (g : low_graph.graph) (l : array T):=
   (length g == length l)%O.
 
 Definition pre_array_computation {T : Type} (f : T -> bool) (a : array T):=
@@ -1593,7 +1593,7 @@ Definition pre_ord_computation (x m : Uint63.int):=
 
 Definition pre_graph_computation 
   {T : Type} (ltT : rel T) (f : T -> bool) 
-  (g : graph.graph) (l : array T):=
+  (g : low_graph.graph) (l : array T):=
   [&& is_sorted_rel ltT l,
       pre_lbl_graph_computation g l,
       pre_struct_computation g &
@@ -1638,7 +1638,7 @@ Proof. by rewrite /PC.pre_ord_computation -ltEint. Qed.
 
 Lemma pre_graph_computationE {T : Type}
   (ltT : rel T) (f : T -> bool) 
-  (g : graph.graph) (l : array T):
+  (g : low_graph.graph) (l : array T):
   PC.pre_graph_computation ltT f g l =
   pre_graph_computation ltT f g l.
 Proof.

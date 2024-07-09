@@ -2,7 +2,7 @@ From mathcomp Require Import all_ssreflect all_algebra finmap.
 From Polyhedra Require Import extra_misc inner_product extra_matrix vector_order affine row_submx.
 From Polyhedra Require Import lrel polyhedron poly_base.
 From Polyhedra Require Import simplex fsetmin.
-From PolyhedraHirsch Require Import graph high_graph extra_simplex.
+From PolyhedraHirsch Require Import high_graph extra_simplex.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

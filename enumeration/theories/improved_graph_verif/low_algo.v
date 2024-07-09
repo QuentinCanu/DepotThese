@@ -2,7 +2,7 @@ From mathcomp Require Import all_ssreflect.
 From Coq Require Import PArray Uint63.
 From Bignums Require Import BigQ.
 From Polyhedra Require Import extra_misc.
-From PolyhedraHirsch Require Import extra_int extra_array rat_bigQ graph.
+From PolyhedraHirsch Require Import extra_int extra_array rat_bigQ low_graph.
 (* From PolyhedraHirschVerif Require Import low_algo. *)
 
 

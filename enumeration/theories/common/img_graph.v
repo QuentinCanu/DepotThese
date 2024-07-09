@@ -1,7 +1,7 @@
 From mathcomp Require Import all_ssreflect all_algebra finmap.
 From Coq Require Import Uint63 PArray.
 From Polyhedra Require Import extra_misc.
-Require Import graph high_graph extra_array extra_int refinement.
+Require Import low_graph high_graph extra_array extra_int refinement.
 Require Import NArith.BinNat NArith.BinNatDef.
 
 Set   Implicit Arguments.
@@ -14,10 +14,10 @@ Import Order.Theory.
 
 Module ImgGraphComputation.
 
-Definition vertex_morph_check morph (gl gr : graph.graph):=
+Definition vertex_morph_check morph (gl gr : low_graph.graph):=
   (IFold.iall (fun k=> GraphUtils.mem_vertex gr morph.[k]) (length gl)).
 
-Definition vertex_inv_check morph morph' (gl gr : graph.graph) := 
+Definition vertex_inv_check morph morph' (gl gr : low_graph.graph) := 
   IFold.iall 
     (fun i=> (GraphUtils.mem_vertex gl morph'.[i]) && 
     (morph.[morph'.[i]] =? i)%uint63) 
@@ -36,7 +36,7 @@ Definition nei_check morph gl gr:=
     gl i)
   (length gl).
 
-Definition no_loop_check morph (gl gr : graph.graph):=
+Definition no_loop_check morph (gl gr : low_graph.graph):=
   IFold.iall (fun i=>
     GraphUtils.mem_vertex gr morph.[i] &&
     ~~(GraphUtils.mem_edge gr morph.[i] morph.[i]))
@@ -67,10 +67,10 @@ Module IGC := ImgGraphComputation.
 
 Section ImgGraphEquiv.
 
-Definition vertex_morph_check morph (gl gr : graph.graph):=
+Definition vertex_morph_check morph (gl gr : low_graph.graph):=
   (iall (fun k=> mem_vertex gr morph.[k]) (length gl)).
 
-Definition vertex_inv_check morph morph' (gl gr : graph.graph) := 
+Definition vertex_inv_check morph morph' (gl gr : low_graph.graph) := 
   iall 
     (fun i=> (mem_vertex gl morph'.[i]) && 
     (morph.[morph'.[i]] == i)%O) 
@@ -89,7 +89,7 @@ Definition nei_check morph gl gr:=
     gl i)
   (length gl).
 
-Definition no_loop_check morph (gl gr : graph.graph):=
+Definition no_loop_check morph (gl gr : low_graph.graph):=
   iall (fun i=>
     mem_vertex gr morph.[i] &&
     ~~(mem_edge gr morph.[i] morph.[i]))
