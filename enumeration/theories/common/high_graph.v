@@ -786,6 +786,7 @@ split.
 Qed.
 
 End Diameter.
+
 Section Regular.
 Context {T : choiceType} (G : graph T) (n : nat).
 
