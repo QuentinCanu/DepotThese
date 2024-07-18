@@ -1,36 +1,24 @@
 #! /usr/bin/env python3
 
 # --------------------------------------------------------------------
-import sys, os, json
-import tqdm
-import struct
-import gc
+import sys, os, json, tqdm
 
 # --------------------------------------------------------------------
-sys.path.append(os.path.realpath(os.path.join(
-    os.path.dirname(__file__),
-    *'../../binreader/scripts'.split('/')
-)))
-
-from . import binreader
+from .. import binreader
 
 # --------------------------------------------------------------------
 DESCRIPTORS = dict(
-    A        = '[[Q]]',
-    b       = '[Q]',
-    lbl_lex   = '[([I],[[Q]])]',
-    lbl_vtx = '[[Q]]',
-    g_lex     = '[[I]]',
-    g_vtx   = '[[I]]',
-    morph      = '[I]',
-    morph_inv  = '[I]',
-    edge_inv  = '[[(I,I)]]',
-    bound_pos  = '[[Q]]',
-    bound_neg  = '[[Q]]',
-    origin    = 'I',
-    start     = 'I',
-    map_dim   = '[I]',
-    inv_dim   = '[[Q]]',
+    A = "[[Q]]",
+    b = "[Q]",
+    bases = "[[I]]",
+    idx = "I",
+    x_I = "[Q]",
+    inv = "[[Q]]",
+    # det = "Q",
+    steps = "I",
+    order = "[I]",
+    pred = "[(I,I,I)]",
+    vtx = "[[Q]]"
 )
 
 DESCRIPTORS = {
@@ -46,18 +34,22 @@ def json2dict(name):
     
     return contents
 
-def dict2bin(tgtdir,contents):
+def dict2bin(name,contents):
+    srcdir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', name)
+    bindir = os.path.join(srcdir, 'bin')
+
     res = {}
-    for key in tqdm.tqdm(contents.keys(), desc="Serializing certificates : "):
-        if key not in DESCRIPTORS:
+
+    os.makedirs(bindir, exist_ok = True)
+    for key, descr in tqdm.tqdm(DESCRIPTORS.items(), desc="Serializing certificates : "):
+        if key not in contents:
             print(f'Ignoring {key}', file = sys.stderr)
             continue
-        descr = DESCRIPTORS[key]
-        tgtbin = os.path.join(tgtdir, f'{key}.bin')
-        with open(tgtbin, 'w+b') as stream:
+        binfile = os.path.join(bindir, f'{key}.bin')
+        with open(binfile, 'w+b') as stream:
             descr.descriptor(stream)
             descr.pickle(contents[key], stream)
-        res[f"Size of {key}.bin"] = float(os.path.getsize(tgtbin))
+        res[f"Size of {key}.bin"] = os.path.getsize(binfile)
     return res
 
 def main(name):

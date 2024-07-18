@@ -58,8 +58,8 @@ int63_scope = "%uint63"
 TYPE = dict(
     A        = 'array (array bigQ)',
     b         = 'array bigQ',
-    l_lex   = 'array (array int63 * array (array bigQ))',
-    l_vtx = 'array (array bigQ)',
+    lbl_lex   = 'array (array int63 * array (array bigQ))',
+    lbl_vtx = 'array (array bigQ)',
     g_lex     = 'array (array int63)',
     g_vtx     = 'array (array int63)',
     morph      = 'array int63',
@@ -94,12 +94,12 @@ TYPE = dict(
 TEXT = dict(
   A = array2text(array2text(bigQ2text,"0",""),default_bigQ_arr,bigQ_scope),
   b = array2text(bigQ2text,"0",bigQ_scope),
-  l_lex = array2text(
+  lbl_lex = array2text(
     couple2text(
       array2text(int632text, "0",int63_scope), 
       array2text(
         array2text(bigQ2text,"0",""),default_bigQ_arr,bigQ_scope)),default_lbl_lex,""),
-  l_vtx = array2text(array2text(bigQ2text,"0",""),default_bigQ_arr,bigQ_scope),
+  lbl_vtx = array2text(array2text(bigQ2text,"0",""),default_bigQ_arr,bigQ_scope),
   g_lex = array2text(array2text(int632text,"0",""),default_int_arr,int63_scope),
   g_vtx = array2text(array2text(int632text,"0",""),default_int_arr,int63_scope),
   morph = array2text(int632text,"0",int63_scope),

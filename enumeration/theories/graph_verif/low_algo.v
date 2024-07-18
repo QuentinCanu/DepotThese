@@ -456,9 +456,9 @@ Module ImgGraphLexComputation.
 *)
 
 Definition img_lex_graph morph morph' edge_inv 
-  g_lex l_lex g_vert l_vert := 
+  g_lex lbl_lex g_vert lbl_vtx := 
   ILGC.img_label_graph (fun x : Com.lex_label => x.2.[0%uint63]) BigQUtils.eq_array_bigQ
-  morph morph' edge_inv (g_lex, l_lex) (g_vert, l_vert).
+  morph morph' edge_inv (g_lex, lbl_lex) (g_vert, lbl_vtx).
 
 End ImgGraphLexComputation.
 
@@ -467,13 +467,13 @@ Module IGLexC := ImgGraphLexComputation.
 Section ImgGraphLexEquiv.
 
 Definition img_lex_graph morph morph' edge_inv 
-  g_lex l_lex g_vert l_vert := 
+  g_lex lbl_lex g_vert lbl_vtx := 
   img_label_graph (fun x : Com.lex_label => x.2.[0%uint63]) eq_array_bigQ
-  morph morph' edge_inv (g_lex,l_lex) (g_vert,l_vert).
+  morph morph' edge_inv (g_lex,lbl_lex) (g_vert,lbl_vtx).
 
-Lemma img_lex_graphE morph morph' edge_inv g_lex l_lex g_vert l_vert:
-  IGLexC.img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert =
-  img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert.
+Lemma img_lex_graphE morph morph' edge_inv g_lex lbl_lex g_vert lbl_vtx:
+  IGLexC.img_lex_graph morph morph' edge_inv g_lex lbl_lex g_vert lbl_vtx =
+  img_lex_graph morph morph' edge_inv g_lex lbl_lex g_vert lbl_vtx.
 Proof. 
 rewrite /IGLexC.img_lex_graph img_label_graphE; congr andb. 
 by rewrite /img_label; apply/eq_all=> i /=; rewrite eq_array_bigQE. 

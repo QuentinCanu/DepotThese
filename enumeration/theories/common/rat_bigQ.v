@@ -488,6 +488,9 @@ Definition bigQ_dot (x y : array bigQ) : bigQ :=
 Definition bigQ_mul_row_mx (a : array bigQ) (x : array (array bigQ)) :=
   PArrayUtils.array_mul_row_mx BigQ.add BigQ.mul 0%bigQ a x.
 
+Definition bigQ_mul_mx_col (x : array (array bigQ)) (a : array bigQ):=
+  PArrayUtils.array_mul_mx_col BigQ.add BigQ.mul 0%bigQ x a.
+
 Definition bigQ_mulmx (m n : array (array bigQ)):=
   PArrayUtils.array_mulmx BigQ.add BigQ.mul 0%bigQ m n.
 
@@ -515,6 +518,12 @@ Definition weighted_lines (v : array bigQ) (A : array (array bigQ)):=
   PArrayUtils.fold_pair
     (fun v_i A_i acc => bigQ_add_rV acc (bigQ_scal_rV v_i A_i))
   v A (make (length A.[0%uint63]) 0%bigQ).
+
+Definition bigQ_scal_arr (lambda : bigQ) (x : array bigQ):=
+    PArrayUtils.map (fun v=> BigQ.mul lambda v) x.
+
+Definition bigQ_add_arr (x y : array bigQ):=
+  PArrayUtils.mk_fun (fun i=> (x.[i] + y.[i])%bigQ) (length x) (0%bigQ).
 
 End BigQUtils.
 

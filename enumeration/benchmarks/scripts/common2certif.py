@@ -28,18 +28,18 @@ def get_lex_labels(bases,vertices,inverses,m,n):
         
         
 # -------------------------------------------------------------------
-def get_morph_and_l_vtx(bases, vertices):
+def get_morph_and_lbl_vtx(bases, vertices):
     bas2vtx = {frozenset(base) : vtx for (base,vtx) in zip(bases,vertices)}
     undup = set([tuple(elt) for elt in vertices])
-    l_vtx = sorted(undup, key=lambda x : [fc.Fraction(elt) for elt in x])
-    morph, morph_inv = [None for _ in bases], [None for _ in l_vtx]
-    aux = {tuple(v) : i for (i,v) in enumerate(l_vtx)}
+    lbl_vtx = sorted(undup, key=lambda x : [fc.Fraction(elt) for elt in x])
+    morph, morph_inv = [None for _ in bases], [None for _ in lbl_vtx]
+    aux = {tuple(v) : i for (i,v) in enumerate(lbl_vtx)}
     for i,base in enumerate(bases):
         v = bas2vtx[frozenset(base)]
         j = aux[tuple(v)]
         morph[i] = j
         morph_inv[j] = i
-    return morph, morph_inv, l_vtx
+    return morph, morph_inv, lbl_vtx
 
 def get_graph_vtx(graph_lex, morph, length_vtx):
     graph = [[] for i in range(length_vtx)]
@@ -62,7 +62,7 @@ def get_edge_inv(G_lex, G_simpl, morf):
     return edge_inv
 
 # -------------------------------------------------------------------
-def common2certif(common,hirsch):
+def common2certif(common):
     res = {}
     res["A"] = common["A"]
     res["b"] = common["b"]
@@ -77,21 +77,16 @@ def common2certif(common,hirsch):
     inverses = common["inverses"]
     g_lex = common["g_lex"]
 
-    res["l_lex"] = get_lex_labels(bases, vertices, inverses, m, n)
-    morph, morph_inv, l_vtx = get_morph_and_l_vtx(bases,vertices)
-    g_vtx = get_graph_vtx(g_lex,morph,len(l_vtx))
+    res["lbl_lex"] = get_lex_labels(bases, vertices, inverses, m, n)
+    morph, morph_inv, lbl_vtx = get_morph_and_lbl_vtx(bases,vertices)
+    g_vtx = get_graph_vtx(g_lex,morph,len(lbl_vtx))
     edge_inv = get_edge_inv(g_lex,g_vtx,morph)
-    res["l_vtx"] = l_vtx
+    res["lbl_vtx"] = lbl_vtx
     res["morph"] = morph
     res["morph_inv"] = morph_inv
     res["g_vtx"] = g_vtx
     res["edge_inv"] = edge_inv
-
-    if hirsch:
-        res["origin"] = common["origin"]
-        res["map_dim"] = common["map_dim"]
-        res["inv_dim"] = common["inv_dim"]
-        res["start"] = common["start"]
+    
     return res
     
 

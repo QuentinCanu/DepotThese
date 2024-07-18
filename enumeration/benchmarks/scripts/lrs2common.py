@@ -174,19 +174,6 @@ def get_farkas_cert(A, m, n):
         cert_pos.append(list(map(bigq,fk.farkas_gen(A, n, m, k))))
         cert_neg.append(list(map(bigq,fk.farkas_gen(-A, n, m, k))))
     return cert_pos, cert_neg
-
-def make_dim_full(lbl_simpl, n):
-    while True:
-        map_lbl = rd.sample(range(len(lbl_simpl)), n+1)
-        map_lbl.sort()
-        M = fk.to_gmp_matrix([list(map(fc.Fraction, lbl_simpl[i])) for i in list(map_lbl)[1:]])
-        N = fk.to_gmp_matrix([list(map(fc.Fraction, lbl_simpl[map_lbl[0]])) for _ in range(n)])
-        Q = M - N
-        Q_det = Q.det()
-        if Q_det != 0:
-            Q_inv = Q.inv()
-            Q_res = list_of_gmp_matrix(Q_inv)
-            return list(map_lbl)[0], list(map_lbl)[1:], Q_res
         
 START_BFS = {"poly20dim21" : 394, "poly23dim24" : 7200}
 
@@ -240,7 +227,7 @@ def optparser():
     return parser
 
 # -------------------------------------------------------------------
-def lrs2common(name, hirsch=False):
+def lrs2common(name):
 
     # Compute everything
     A,b = get_polyhedron_from_lrs(name)
@@ -262,20 +249,6 @@ def lrs2common(name, hirsch=False):
     # et = time.time()
     # print(f"{et - st:.2f}s")
 
-    
-    # Hirsch specific certificates
-    if hirsch:
-        print(f"Computation of the certficates of full-dimensionality : ", end="", flush=True)
-        st = time.time()
-        origin, map_dim, inv_dim = make_dim_full(vertices, len(A[0]))
-        et = time.time()
-        print(f"{et - st:.2f}s")
-        start=0
-        try:
-            start = START_BFS[name]
-        except KeyError:
-            print("Only works with Hirsch counterexample : poly20dim21 or poly23dim24")
-
     # # Store in a dictionnary
     tgtdict =   {
                 "A"         : A,
@@ -287,10 +260,5 @@ def lrs2common(name, hirsch=False):
                 "bound_pos" : bound_pos,
                 "bound_neg" : bound_neg
                 }
-    if hirsch:
-        tgtdict["origin"] = origin
-        tgtdict["map_dim"] = map_dim
-        tgtdict["inv_dim"] = inv_dim
-        tgtdict["start"] = start
 
     return tgtdict

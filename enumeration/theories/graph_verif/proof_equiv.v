@@ -27,22 +27,22 @@ Definition rel_basis (m' : nat) :=
 Definition rel_point (m' n' : nat):=
   @rel_point_mx_col _ [realFieldType of rat] rat_bigQ n' (m'.+1).
 
-Definition rel_lex_vert (m' n' : nat):=
+Definition rel_lex_vtx (m' n' : nat):=
   rel_couple (@rel_basis m') (@rel_point m' n').
 
 Definition rel_lex_lbl_graph (m' n' : nat):=
-  @rel_lbl_graph _ _ (@rel_lex_vert m' n').
+  @rel_lbl_graph _ _ (@rel_lex_vtx m' n').
 
 Definition rel_lex_graph (m' n' : nat):=
-  @rel_graph_r _ _ (@rel_lex_vert m' n').
+  @rel_graph_r _ _ (@rel_lex_vtx m' n').
 
 Definition rel_poly (m' n' : nat):= 
   @rel_Po_r _ [realFieldType of rat] rat_bigQ m' n'.
 
-Definition rel_vert (n' : nat):= @rel_point_cV _ _ rat_bigQ n'.
+Definition rel_vtx (n' : nat):= @rel_point_cV _ _ rat_bigQ n'.
 
-Definition rel_vert_graph (n' : nat):= 
-  @rel_graph_r _ _ (@rel_vert n').
+Definition rel_vtx_graph (n' : nat):= 
+  @rel_graph_r _ _ (@rel_vtx n').
 
 Definition rel_bound (m' n' : nat):=
   @rel_point_mx_row _ _ rat_bigQ n' m'.
@@ -75,45 +75,45 @@ Lemma spec_func_point (m' n' : nat):
   spec_func (@rel_point m' n') (@spec_point m' n') (@precond_point m' n').
 Proof. by apply/spec_func_to_point_mx_col. Qed.
 
-Definition spec_lex_vert (m' n' : nat) x:=
+Definition spec_lex_vtx (m' n' : nat) x:=
   (@spec_basis m' x.1, @spec_point m' n' x.2).
 
-Definition precond_lex_vert (m' n' : nat) x:=
+Definition precond_lex_vtx (m' n' : nat) x:=
   @precond_basis m' x.1 /\ @precond_point m' n' x.2.
 
-Lemma spec_func_lex_vert (m' n' : nat):
-  spec_func (@rel_lex_vert m' n') (@spec_lex_vert m' n')
-    (@precond_lex_vert m' n').
+Lemma spec_func_lex_vtx (m' n' : nat):
+  spec_func (@rel_lex_vtx m' n') (@spec_lex_vtx m' n')
+    (@precond_lex_vtx m' n').
 Proof. apply: spec_func_couple; [exact:spec_func_basis|exact:spec_func_point]. Qed.
 
 Definition spec_lex_lbl_graph (m' n' : nat):=
-  lbl_graph_to_high_lbl (@spec_lex_vert m' n').
+  lbl_graph_to_high_lbl (@spec_lex_vtx m' n').
 
 Definition precond_lex_lbl_graph (m' n' : nat) gl:=
   (precond_lbl_graph gl /\ 
     (precond_struct gl.1 /\ 
-    precond_array (@precond_lex_vert m' n') gl.2)).
+    precond_array (@precond_lex_vtx m' n') gl.2)).
 
 Lemma spec_func_lex_lbl_graph (m' n' : nat):
   spec_func (@rel_lex_lbl_graph m' n') (@spec_lex_lbl_graph m' n')
     (@precond_lex_lbl_graph m' n').
-Proof. exact/spec_func_lbl_graph/spec_func_lex_vert. Qed.
+Proof. exact/spec_func_lbl_graph/spec_func_lex_vtx. Qed.
 
 Definition spec_lex_graph (m' n' : nat):=
   high_lbl_to_final \o (@spec_lex_lbl_graph m' n').
 
 Definition precond_lex_graph (m' n' : nat) gl:=
   precond_graph (fun x y=> lt_array_int x.1 y.1) 
-  (@precond_lex_vert m' n') gl.
+  (@precond_lex_vtx m' n') gl.
 
 Lemma spec_func_lex_graph (m' n' : nat):
   spec_func (@rel_lex_graph m' n') (@spec_lex_graph m' n')
     (@precond_lex_graph m' n').
 Proof.
 apply/(spec_func_rel_graph_r (eqt:=(fun x y=> eq_array_int x.1 y.1)));
-  [ | | |exact:spec_func_lex_vert].
+  [ | | |exact:spec_func_lex_vtx].
 - move=> y x z; apply/lt_array_int_trans.
-- move=> x y /spec_func_lex_vert [/= x1X1 _] /spec_func_lex_vert [/= y1Y1 _].
+- move=> x y /spec_func_lex_vtx [/= x1X1 _] /spec_func_lex_vtx [/= y1Y1 _].
   case/eqP=> /eqP + _; apply/eq_imply/esym/(rel_arr_set_r_eq _ _ _ x1X1 y1Y1).
   + exact/ltnn.
   + apply/ltn_trans.
@@ -140,32 +140,32 @@ move=> x [Px1 Px2]; apply/rel_couple_comp; split=> /=.
 - apply/spec_func_to_point_cV=> //; exact/Px2.
 Qed.
 
-Definition spec_vert (n' : nat):= @arr_to_point_cV _ _ n' bigQ2rat_def.
+Definition spec_vtx (n' : nat):= @arr_to_point_cV _ _ n' bigQ2rat_def.
 
-Definition precond_vert (n' : nat) (a : array bigQ):=
+Definition precond_vtx (n' : nat) (a : array bigQ):=
   @precond_len BigQ.bigQ n' a /\ precond_array (fun _ => True) a.
 
-Lemma spec_func_vert (n' : nat):
-  spec_func (@rel_vert n') (@spec_vert n') (@precond_vert n').
+Lemma spec_func_vtx (n' : nat):
+  spec_func (@rel_vtx n') (@spec_vtx n') (@precond_vtx n').
 Proof. exact/spec_func_to_point_cV. Qed.
 
-Definition spec_vert_graph (n' : nat):=
-  high_lbl_to_final \o (lbl_graph_to_high_lbl (@spec_vert n')).
+Definition spec_vtx_graph (n' : nat):=
+  high_lbl_to_final \o (lbl_graph_to_high_lbl (@spec_vtx n')).
 
-Definition precond_vert_graph (n' : nat) gl:=
-  precond_graph (BQltx_order) (@precond_vert n') gl.
+Definition precond_vtx_graph (n' : nat) gl:=
+  precond_graph (BQltx_order) (@precond_vtx n') gl.
 
-Lemma spec_func_vert_graph (n' : nat):
-  spec_func (@rel_vert_graph n')
-  (@spec_vert_graph n') (@precond_vert_graph n').
+Lemma spec_func_vtx_graph (n' : nat):
+  spec_func (@rel_vtx_graph n')
+  (@spec_vtx_graph n') (@precond_vtx_graph n').
 Proof.
 apply/(spec_func_rel_graph_r (eqt:=eq_array_bigQ)).
 - exact/BQltx_order_trans.
-- move=> x y /spec_func_vert xX /spec_func_vert yY.
+- move=> x y /spec_func_vtx xX /spec_func_vtx yY.
   exact/eq_imply2/rel_cV_bqr_eq.
 - move=> x y /[dup]; rewrite {1}eq_array_bigQC=> yx xy.
   split; [move: xy|move: yx]; exact/contraTN/BQltx_order_neq. 
-- exact/spec_func_vert.
+- exact/spec_func_vtx.
 Qed.
 
 Definition spec_bound (m' n' : nat) :=
@@ -228,16 +228,16 @@ Qed.
 
 End LexGraph.
 
-Section VertGraph.
+Section vtxGraph.
 
-Lemma vert_graph_format_precond g l: vtx_graph_format A g l ->
-  precond_vert_graph n' (g,l).
+Lemma vtx_graph_format_precond g l: vtx_graph_format A g l ->
+  precond_vtx_graph n' (g,l).
 Proof.
 apply/precond_graphP=> x len_x; split=> //; rewrite /precond_len.
 by rewrite format_poly_mn; apply/esym/eqP.
 Qed.   
 
-End VertGraph.
+End vtxGraph.
 
 Section Bound.
 
@@ -265,11 +265,11 @@ Section RelLexGraph.
 
 Context (m' n' : nat).
 
-Lemma rel_lex_vert_bas l V: @rel_lex_vert m' n' l V->
+Lemma rel_lex_vtx_bas l V: @rel_lex_vtx m' n' l V->
   rel_basis l.1 V.1.
 Proof. by case. Qed.
 
-Lemma rel_lex_vert_point l V: @rel_lex_vert m' n' l V->
+Lemma rel_lex_vtx_point l V: @rel_lex_vtx m' n' l V->
   rel_point l.2 V.2.
 Proof. by case. Qed.
 
@@ -282,7 +282,7 @@ Qed.
 Lemma rel_point_spec: rel_spec (@rel_point m' n') eq.
 Proof. apply/rel_point_mx_col_spec/rat_bigQ_injr. Qed.
 
-Lemma rel_lex_vert_spec: rel_spec (@rel_lex_vert m' n') eq.
+Lemma rel_lex_vtx_spec: rel_spec (@rel_lex_vtx m' n') eq.
 Proof.
 move: (rel_spec_couple rel_basis_spec rel_point_spec)=> h.
 move=> x X Y xX xY; move/(_ _ _ _ xX xY): h.
@@ -305,7 +305,7 @@ Context (G : high_graph.graph (enum_type m' n')).
 
 Hypothesis gl_G : rel_lex_graph (g, l) G.
 
-Lemma rel_lex_vert_m_max v V: @rel_lex_vert m' n' v V->
+Lemma rel_lex_vtx_m_max v V: @rel_lex_vtx m' n' v V->
   (Com.m A_low < max_length)%O.
 Proof.
 case=> _ /rel_point_mx_col_length; move: (rel_Po_r_m Po_Ab)=> -> Po_len.
@@ -315,38 +315,38 @@ Qed.
 
 Lemma card_bas_test_equiv i V:
   mem_vertex g i -> V \in vertices G ->
-  rel_lex_vert l.[i] V ->
+  rel_lex_vtx l.[i] V ->
   card_bas_test A_low l i = card_verification V.
 Proof.
 move=> ig VG iV; rewrite /card_bas_test /card_verification.
 apply/rel_int_eq; [|exact:(rel_Po_r_n Po_Ab)].
-move/rel_lex_vert_bas: iV=> /rel_arr_set_r_length; apply. 
+move/rel_lex_vtx_bas: iV=> /rel_arr_set_r_length; apply. 
 - by move=> x /=; rewrite ltnn.
 - move=> y x z /=; apply/ltn_trans.
 Qed.
 
 Lemma sat_ineq_equiv i V:
   mem_vertex g i -> V \in vertices G ->
-  rel_lex_vert l.[i] V ->
+  rel_lex_vtx l.[i] V ->
   (rel_int_ord =~> @rel_rV_bqr n' =~> rat_bigQ =~> eq)
     (fun k lA lb=> sat_ineq (Com.m A_low) k lA lb (Com.point l i))
     (fun k lA lb=> leqlex (row_mx lb%:M (row k (-1%:M))) (lA *m V.2)).
 Proof.
 move=> ig VG iV k K kK la LA laLA lb LB lbLB.
 rewrite sat_ineqP; last first.
-- move/rel_lex_vert_point: iV=> /rel_point_mx_col_length h.
+- move/rel_lex_vtx_point: iV=> /rel_point_mx_col_length h.
   apply/int_to_nat_inj; rewrite -h (rel_Po_r_m Po_Ab).
   by rewrite length_succ.
 - apply/rel_rV_bqr_lex.
   + rewrite -GRing.scaleN1r scale_scalar_mx GRing.mulr1.
     apply/rel_rV_bqr_pertline=> //; last exact/(rel_Po_r_m Po_Ab).
-    exact:(rel_lex_vert_m_max iV).
-  + apply/rel_mx_bqr_mul_col=> //; exact:rel_lex_vert_point.
+    exact:(rel_lex_vtx_m_max iV).
+  + apply/rel_mx_bqr_mul_col=> //; exact:rel_lex_vtx_point.
 Qed.
 
 Lemma sat_test_equiv i V:
   mem_vertex g i -> V \in vertices G ->
-  rel_lex_vert l.[i] V ->
+  rel_lex_vtx l.[i] V ->
   sat_test A_low b_low l i = feas_verification A b V.
 Proof.
 move=> ig VG iV.
@@ -357,21 +357,21 @@ Qed.
 
 Lemma bas_eq_test_equiv i V:
   mem_vertex g i -> V \in vertices G ->
-  rel_lex_vert l.[i] V -> 
+  rel_lex_vtx l.[i] V -> 
   bas_eq_test A_low b_low l i = bas_verification A b V.
 Proof.
 move=> ig VG iV.
 rewrite /bas_eq_test /mask_eq /bas_verification.
 rewrite -row_submx_mul -row_submx_eq.
 apply:(rel_arr_set_r_iall (a:=(Com.bas l i)) (A:=V.1));
-  last exact:(rel_lex_vert_bas iV).
+  last exact:(rel_lex_vtx_bas iV).
 move=> k K k_len kK.
 apply/rel_point_rV_eq; [exact:rat_bigQ_eq| | ].
 - rewrite row_mul; apply/rel_mx_bqr_mul_col;
-    [exact:(rel_Po_r_row_A Po_Ab kK)|exact:rel_lex_vert_point].
+    [exact:(rel_Po_r_row_A Po_Ab kK)|exact:rel_lex_vtx_point].
 - rewrite /Simplex.b_pert row_row_mx row_cV -GRing.scaleN1r scale_scalar_mx GRing.mulr1.
   apply/(rel_rV_bqr_pertline _ _ kK)=> //.
-  + exact/(rel_lex_vert_m_max)/iV.
+  + exact/(rel_lex_vtx_m_max)/iV.
   + exact/(rel_Po_r_m Po_Ab).
   + exact:(rel_Po_r_row_b Po_Ab kK).
 Qed.
@@ -379,12 +379,12 @@ Qed.
 
 Lemma regularity_test_equiv i V:
   mem_vertex g i -> V \in vertices G ->
-  rel_lex_vert l.[i] V -> regularity_test A_low g i = reg_verification G V.
+  rel_lex_vtx l.[i] V -> regularity_test A_low g i = reg_verification G V.
 Proof.
 move=> ig VG iV.
 rewrite /regularity_test /reg_verification (rel_graph_r_succ_card _ gl_G ig) //.
 + by move: (rel_Po_r_n Po_Ab); rewrite /Com.n=> ->.
-+ exact:rel_lex_vert_spec.
++ exact:rel_lex_vtx_spec.
 Qed.
 
 Lemma vertex_consistent_equiv:
@@ -398,15 +398,15 @@ Qed.
 
 Lemma basI_test_equiv i V:
   mem_vertex g i -> V \in vertices G ->
-  rel_lex_vert l.[i] V ->
+  rel_lex_vtx l.[i] V ->
   basI_test A_low g l i = all (inter_verification V) (successors G V).
 Proof.
 move=> ig VG iV. 
 apply/(rel_graph_r_nei_all _ _ gl_G ig VG iV).
-- exact:rel_lex_vert_spec.
+- exact:rel_lex_vtx_spec.
 - move=> j W /= jg WG jW; rewrite /inter_verification /Com.n.
   apply/rel_int_eq. 
-  + apply:rel_arr_set_r_inter; try exact:rel_lex_vert_bas;
+  + apply:rel_arr_set_r_inter; try exact:rel_lex_vtx_bas;
       [exact:rel_int_ord_lt|move=> x /=; exact:ltnn|move=> y x z /=; exact:ltn_trans|].
     by move=> x y /=; rewrite -!leqNgt=> ??; apply/val_inj/anti_leq/andP; split.
   + move: (rel_Po_r_n Po_Ab); rewrite /rel_int pred_intE ?ltEint_nat -?(rel_Po_r_n Po_Ab) //.
@@ -440,18 +440,18 @@ Context (G_lex : high_graph.graph (enum_type m' n')).
 
 Hypothesis gG_lex : rel_lex_graph (g_lex, l_lex) G_lex.
 
-Context (g_vert : low_graph.graph) (l_vert : array (array (BigQ.bigQ))).
-Context (G_vert : high_graph.graph ([choiceType of 'cV[rat]_n'.+1])).
+Context (g_vtx : low_graph.graph) (l_vtx : array (array (BigQ.bigQ))).
+Context (G_vtx : high_graph.graph ([choiceType of 'cV[rat]_n'.+1])).
 
-Hypothesis gG_vert : rel_vert_graph (g_vert, l_vert) G_vert.
+Hypothesis gG_vtx : rel_vtx_graph (g_vtx, l_vtx) G_vtx.
 
 Context (morph morph' : array int) (edge_inv : array (array (int * int))).
 
 Lemma img_lex_graph_equiv:
-  img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert ->
-  G_vert = (@phi m' n') @/ G_lex.
+  img_lex_graph morph morph' edge_inv g_lex l_lex g_vtx l_vtx ->
+  G_vtx = (@phi m' n') @/ G_lex.
 Proof.
-apply/rel_graph_r_img; [ | |exact:gG_lex|exact:gG_vert].
+apply/rel_graph_r_img; [ | |exact:gG_lex|exact:gG_vtx].
 - apply: (rel_couple_func_snd (f:=(fun x=> x.[0%uint63]))).
   exact: (rel_point_mx_col_col0).
 - exact/rel_point_cV_eq/rat_bigQ_eq.
@@ -636,7 +636,7 @@ Hypothesis invInv: rel_inv inv Inv.
 
 Context (g : low_graph.graph) (l : Com.vtx_mapping).
 Context (G : high_graph.graph [choiceType of 'cV[rat]_n]).
-Hypothesis glG : rel_vert_graph (g,l) G.
+Hypothesis glG : rel_vtx_graph (g,l) G.
 
 Lemma dim_full_vtx_graph :
   dim_full_test A_low l map_ origin inv ->
@@ -693,7 +693,7 @@ Qed.
 
 Context {g : low_graph.graph} (l : array (array bigQ)).
 Context (G : graph [choiceType of 'cV[rat]_n]).
-Hypothesis gG: rel_vert_graph (g,l) G.
+Hypothesis gG: rel_vtx_graph (g,l) G.
 Context (x : int).
 
 Lemma high_diameter_check_equiv:
@@ -743,8 +743,8 @@ Local Notation n' := (Com.n A_low).-1.
 Context (g_lex : low_graph.graph) (l_lex : Com.lex_mapping).
 Hypothesis gl_lex_format : lex_graph_format A_low g_lex l_lex.
 
-Context (g_vert : low_graph.graph) (l_vert : array (array BigQ.bigQ)).
-Hypothesis gl_vert_format : vtx_graph_format A_low g_vert l_vert.
+Context (g_vtx : low_graph.graph) (l_vtx : array (array BigQ.bigQ)).
+Hypothesis gl_vtx_format : vtx_graph_format A_low g_vtx l_vtx.
 
 Context (morph morph' : array Uint63.int). 
 Context (edge_inv : array (array (Uint63.int * Uint63.int))).
@@ -755,7 +755,7 @@ Hypothesis y_neg_format : bound_format A_low y_neg.
 
 Hypothesis vtx_h : vertex_consistent A_low b_low g_lex l_lex.
 Hypothesis struct_h : struct_consistent A_low g_lex l_lex.
-Hypothesis img_h : img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert.
+Hypothesis img_h : img_lex_graph morph morph' edge_inv g_lex l_lex g_vtx l_vtx.
 Hypothesis bound_h : @bounded_Po_test A_low y_pos y_neg.
 Hypothesis graph_h : lex_graph_n0 g_lex.
 
@@ -763,7 +763,7 @@ Local Notation high_poly := (spec_poly m' n' (A_low, b_low)).
 Local Notation A := high_poly.1.
 Local Notation b := high_poly.2.
 Local Notation G_lex := (spec_lex_graph m' n' (g_lex,l_lex)).
-Local Notation G_vert := (spec_vert_graph n' (g_vert,l_vert)).
+Local Notation G_vtx := (spec_vtx_graph n' (g_vtx,l_vtx)).
 Local Notation P := (poly_of_syst (A,b)).
 
 Lemma high_enum_h : high_lex_certif_algo A b G_lex.
@@ -780,11 +780,11 @@ by move/spec_func_lex_graph/graph_n0_equiv=> <-.
 Qed. 
 
 Lemma high_img_h:
-  G_vert = ((@phi m' n') @/ G_lex).
+  G_vtx = ((@phi m' n') @/ G_lex).
 Proof.
 apply/img_lex_graph_equiv; [| |exact:img_h].
 - exact/spec_func_lex_graph/(lex_graph_format_precond Po_format).
-- exact/spec_func_vert_graph/(vert_graph_format_precond Po_format).
+- exact/spec_func_vtx_graph/(vtx_graph_format_precond Po_format).
 Qed.
 
 Lemma high_bound_h:
@@ -800,7 +800,7 @@ Qed.
 Lemma P_compact : compact P.
 Proof. exact/high_poly_boundedP/high_bound_h. Qed.
 
-Lemma Validation: poly_graph P = G_vert.
+Lemma Validation: poly_graph P = G_vtx.
 Proof.
 rewrite high_img_h.
 apply/poly_graph_certification; 
@@ -812,8 +812,8 @@ Hypothesis inv_format: inv_format A_low inv.
 
 Context (start : Uint63.int).
 
-Hypothesis dim_h : dim_full_test A_low l_vert map_ origin inv.
-Hypothesis diameter_h : diameter_check A_low g_vert start. 
+Hypothesis dim_h : dim_full_test A_low l_vtx map_ origin inv.
+Hypothesis diameter_h : diameter_check A_low g_vtx start. 
 
 
 Lemma high_dim_h:
@@ -821,8 +821,8 @@ Lemma high_dim_h:
 Proof.
 move: (format_poly_precond Po_format) 
   (inv_format_precond Po_format inv_format)
-  (vert_graph_format_precond Po_format gl_vert_format).
-move/spec_func_poly=> + /spec_func_inv + /spec_func_vert_graph.
+  (vtx_graph_format_precond Po_format gl_vtx_format).
+move/spec_func_poly=> + /spec_func_inv + /spec_func_vtx_graph.
 move/dim_full_vtx_graph=> /[apply] /[apply].
 case/(_ _ _ dim_h)=> /= x0 [s].
 rewrite -Validation vtx_mk_graph=> h.
@@ -836,11 +836,11 @@ by rewrite -(conv_vertex_set P_compact).
 Qed.
 
 Lemma high_diameter_h:
-  (diameter G_vert > m'.+1 - n'.+1)%nat.
+  (diameter G_vtx > m'.+1 - n'.+1)%nat.
 Proof.
 move: (format_poly_precond Po_format)
-  (vert_graph_format_precond Po_format gl_vert_format).
-move/spec_func_poly=> + /spec_func_vert_graph.
+  (vtx_graph_format_precond Po_format gl_vtx_format).
+move/spec_func_poly=> + /spec_func_vtx_graph.
 by move/high_diameter_check_equiv=> /[apply] /(_ _ diameter_h).
 Qed.
 
@@ -865,8 +865,8 @@ Local Notation n' := (Com.n A_low).-1.
 Context (g_lex : low_graph.graph) (l_lex : Com.lex_mapping).
 Hypothesis gl_lex_format : lex_graph_format A_low g_lex l_lex.
 
-Context (g_vert : low_graph.graph) (l_vert : array (array BigQ.bigQ)).
-Hypothesis gl_vert_format : vtx_graph_format A_low g_vert l_vert.
+Context (g_vtx : low_graph.graph) (l_vtx : array (array BigQ.bigQ)).
+Hypothesis gl_vtx_format : vtx_graph_format A_low g_vtx l_vtx.
 
 Context (morph morph' : array Uint63.int). 
 Context (edge_inv : array (array (Uint63.int * Uint63.int))).
@@ -877,7 +877,7 @@ Hypothesis y_neg_format : bound_format A_low y_neg.
 
 Hypothesis vtx_h : vertex_consistent A_low b_low g_lex l_lex.
 Hypothesis struct_h : struct_consistent A_low g_lex l_lex.
-Hypothesis img_h : img_lex_graph morph morph' edge_inv g_lex l_lex g_vert l_vert.
+Hypothesis img_h : img_lex_graph morph morph' edge_inv g_lex l_lex g_vtx l_vtx.
 Hypothesis bound_h : @bounded_Po_test A_low y_pos y_neg.
 Hypothesis graph_h : lex_graph_n0 g_lex.
 
@@ -885,34 +885,34 @@ Local Notation high_poly := (spec_poly m' n' (A_low, b_low)).
 Local Notation A := high_poly.1.
 Local Notation b := high_poly.2.
 Local Notation G_lex := (spec_lex_graph m' n' (g_lex,l_lex)).
-Local Notation G_vert := (spec_vert_graph n' (g_vert,l_vert)).
+Local Notation G_vtx := (spec_vtx_graph n' (g_vtx,l_vtx)).
 
 Lemma diameter_of_polyXXdimXX k:
-  diameter_exact g_vert k ->
+  diameter_exact g_vtx k ->
   diameter (poly_graph (poly_of_syst high_poly)) = int_to_nat k.
 Proof.
 move=> diameter_h.
-have:= (Validation Po_format gl_lex_format gl_vert_format y_pos_format y_neg_format).
+have:= (Validation Po_format gl_lex_format gl_vtx_format y_pos_format y_neg_format).
 move=> /(_ _ _ _ vtx_h struct_h img_h bound_h graph_h) ->.
-move: (vert_graph_format_precond Po_format gl_vert_format).
-move/spec_func_vert_graph=> rel_g_vert. 
-rewrite -(rel_graph_diameter rel_g_vert) /=.
+move: (vtx_graph_format_precond Po_format gl_vtx_format).
+move/spec_func_vtx_graph=> rel_g_vtx. 
+rewrite -(rel_graph_diameter rel_g_vtx) /=.
 move: diameter_h=> /eqP diam_h.
 apply/nat_to_int_inj; [|exact:int_thresholdP|rewrite int_to_natK //].
 rewrite inE.
-apply/(@leq_ltn_trans (length g_vert)); last exact/int_thresholdP.
-case: rel_g_vert=> -[g' ?] [_ [/= gg' _] _].
+apply/(@leq_ltn_trans (length g_vtx)); last exact/int_thresholdP.
+case: rel_g_vtx=> -[g' ?] [_ [/= gg' _] _].
 rewrite (rel_struct_diameter gg') -(rel_struct_card gg').
 apply/bigmax_leqP=> p _; exact: size_path_le.
 Qed.
 
 Lemma diameter_of_poly20dim21:
-  diameter_exact g_vert 21%uint63->
+  diameter_exact g_vtx 21%uint63->
   diameter (poly_graph (poly_of_syst high_poly)) = 21%nat.
 Proof. by move/diameter_of_polyXXdimXX=> ->. Qed.
 
 Lemma diameter_of_poly23dim24:
-  diameter_exact g_vert 24%uint63->
+  diameter_exact g_vtx 24%uint63->
   diameter (poly_graph (poly_of_syst high_poly)) = 24%nat.
 Proof. by move/diameter_of_polyXXdimXX=> ->. Qed.
 

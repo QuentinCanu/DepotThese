@@ -58,8 +58,9 @@ Lemma sum_length {T T' : Type} (a : array T) (b : array T'):
 Proof.
 rewrite add_intE // inE; apply/(@ltn_trans max_int_)/int_thresholdP.
 apply/(@leq_ltn_trans (max_length + max_length)%uint63); last rewrite -ltEint_nat max_length_lt2 //.
-rewrite add_intE; last apply/leq_add; rewrite -?leEint_nat ?leEint ?leb_length //.
-by apply/wB_natE; rewrite /wB_nat /int_to_nat /wB /max_length; vm_compute.
+rewrite add_intE; last apply/leq_add; rewrite -?leEint_nat ?leEint ?leb_length //; apply/wB_natE.
+rewrite /wB_nat /int_to_nat /wB /max_length. 
+by vm_compute.
 Qed.
 
 
@@ -154,6 +155,10 @@ Definition array_dot {T : Type} (addf mulf: T -> T -> T) (x0 : T)
 Definition array_mul_row_mx {T : Type} addf mulf x0
   (v : array T) (M : array (array T)):=
   map (fun c=> array_dot addf mulf x0 v c) M.
+
+Definition array_mul_mx_col {T : Type} addf mulf x0
+  (M : array (array T)) (v : array T):=
+  map (fun r => array_dot addf mulf x0 r v) M.
 
 Definition array_mulmx {T : Type} addf mulf x0
   (M N : array (array T)):=
