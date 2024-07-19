@@ -533,7 +533,7 @@ End ReprGraphBFS.
 
 End RelStruct.
 
-Section DiameterProof.
+Section BFSInvariant.
 
 Context {T : choiceType} (G : graph T).
 Context (succ : T -> seq T).
@@ -1224,8 +1224,7 @@ End BFS.
 Section Diameter.
 
 Lemma BFS_succP x: x \in vertices G -> 
-  BFS_succ G x succ = 
-  \max_(p : epath G | is_shortest_epath p && (src p == x)) size_path p.
+  BFS_succ G x succ = eccentricity G x.
 Proof.
 move=> xG; move: (BFS_iter_succP xG).
 rewrite /BFS_succ /param_BFS /param_BFS_ /BFS_iter_succ.
@@ -1249,7 +1248,7 @@ Qed.
 
 End Diameter.
 
-End DiameterProof.
+End BFSInvariant.
 
 Section HighBFS.
 
