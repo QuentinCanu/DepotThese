@@ -568,10 +568,10 @@ Module HirschUtils.
 
 Definition diameter_check (A : Com.matrix) g x :=
   [&& ((Com.n A) <? (Com.m A))%uint63, GraphUtils.mem_vertex g x &
-      ((Com.m A) - (Com.n A) <? nat_to_int (DC.BFS g x))%uint63].
+      ((Com.m A) - (Com.n A) <? nat_to_int (DC.bfs g x))%uint63].
 
 Definition diameter_exact g k :=
-  (nat_to_int (DC.diameter_BFS g) =? k)%uint63.
+  (nat_to_int (DC.diameter_bfs g) =? k)%uint63.
 
 End HirschUtils.
 
@@ -580,21 +580,21 @@ Section Hirsch.
 Definition diameter_check (A : Com.matrix) g x :=
   [&& 
     ((Com.n A) < (Com.m A))%O, mem_vertex g x &
-    (((Com.m A) - (Com.n A))%uint63 < nat_to_int (BFS g x))%O
+    (((Com.m A) - (Com.n A))%uint63 < nat_to_int (bfs g x))%O
   ].
 
 Definition diameter_exact g k :=
-  (nat_to_int (diameter_BFS g) == k).
+  (nat_to_int (diameter_bfs g) == k).
 
 Section Equiv.
 
 Lemma diameter_checkE (A : Com.matrix) g x:
   HirschUtils.diameter_check A g x = diameter_check A g x.
-Proof. by rewrite /HirschUtils.diameter_check BFSE mem_vertexE -!ltEint. Qed.
+Proof. by rewrite /HirschUtils.diameter_check bfsE mem_vertexE -!ltEint. Qed.
 
 Lemma diameter_exactE g k:
   HirschUtils.diameter_exact g k = diameter_exact g k.
-Proof. by rewrite /HirschUtils.diameter_exact eqEint low_diameterE. Qed.
+Proof. by rewrite /HirschUtils.diameter_exact eqEint diameter_bfsE. Qed.
 
 End Equiv.
 

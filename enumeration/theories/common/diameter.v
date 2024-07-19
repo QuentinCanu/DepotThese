@@ -159,7 +159,7 @@ Module State.
 End State.
 
 Section Diameter.
-Definition BFS_step (g : low_graph.graph) (st : state * int * N) :=
+Definition bfs_step (g : low_graph.graph) (st : state * int * N) :=
   let: (st, x, k) := st in
 
   let: st :=
@@ -172,19 +172,19 @@ Definition BFS_step (g : low_graph.graph) (st : state * int * N) :=
   | None    => inr st
   end.
 
-Definition BFS_ (g : low_graph.graph) (x : int) :=
-  let: out := BFS_step g (State.mk (PArray.length g) x, x, 0%N) in
+Definition bfs_ (g : low_graph.graph) (x : int) :=
+  let: out := bfs_step g (State.mk (PArray.length g) x, x, 0%N) in
   let: out := IFold.iofold
-    (fun _ s => BFS_step g s)
+    (fun _ s => bfs_step g s)
     (length g)%uint63
     out in
   if out is inr v then Some v else None.
 
-Definition BFS (g : low_graph.graph) (x : int) :=
-  odflt 0%N (omap (fun x => x.(maxpath)) (BFS_ g x)).
+Definition bfs (g : low_graph.graph) (x : int) :=
+  odflt 0%N (omap (fun x => x.(maxpath)) (bfs_ g x)).
 
-Definition diameter_BFS (g : low_graph.graph) :=
-  IFold.ifold (fun i v=> N.max v (BFS g i)) (length g) 0%N.
+Definition diameter_bfs (g : low_graph.graph) :=
+  IFold.ifold (fun i v=> N.max v (bfs g i)) (length g) 0%N.
 
 End Diameter.
 End DiameterComputation.
@@ -192,7 +192,7 @@ End DiameterComputation.
 Module DC := DiameterComputation.
 
 Section DiameterEquiv.
-Definition BFS_step (g : low_graph.graph) (st : DC.state * int * N) :=
+Definition bfs_step (g : low_graph.graph) (st : DC.state * int * N) :=
   let: (st, x, k) := st in
 
   let: st :=
@@ -205,41 +205,41 @@ Definition BFS_step (g : low_graph.graph) (st : DC.state * int * N) :=
   | None    => inr st
   end.
 
-Definition BFS_ (g : low_graph.graph) (x : int) :=
-  let: out := BFS_step g (DC.State.mk (PArray.length g) x, x, 0%N) in
+Definition bfs_ (g : low_graph.graph) (x : int) :=
+  let: out := bfs_step g (DC.State.mk (PArray.length g) x, x, 0%N) in
    let: out := iofold
-      (fun _ s => BFS_step g s)
+      (fun _ s => bfs_step g s)
       (length g)%uint63
       out in
     if out is inr v then Some v else None.
 
-Definition BFS (g : low_graph.graph) (x : int) :=
-  odflt 0%N (omap (fun x => x.(DC.maxpath)) (BFS_ g x)).
+Definition bfs (g : low_graph.graph) (x : int) :=
+  odflt 0%N (omap (fun x => x.(DC.maxpath)) (bfs_ g x)).
 
-Definition diameter_BFS (g : low_graph.graph) :=
-  ifold (fun i v=> N.max v (BFS g i)) (length g) 0%N.
+Definition diameter_bfs (g : low_graph.graph) :=
+  ifold (fun i v=> N.max v (bfs g i)) (length g) 0%N.
 
 Section Equiv.
 
-Lemma BFSE (g : low_graph.graph) x:
-  DC.BFS g x = BFS g x.
+Lemma bfsE (g : low_graph.graph) x:
+  DC.bfs g x = bfs g x.
 Proof.
-rewrite /DC.BFS /BFS.
+rewrite /DC.bfs /bfs.
 congr odflt; congr omap.
-rewrite /DC.BFS_ /BFS_ iofoldE.
+rewrite /DC.bfs_ /bfs_ iofoldE.
 set IO := iofold _ _ _; set IO' := iofold _ _ _.
 suff ->: IO = IO' by [].
-rewrite /IO /IO' /iofold /DC.BFS_step neighbour_foldE.
+rewrite /IO /IO' /iofold /DC.bfs_step neighbour_foldE.
 apply/eq_foldl=> + j; case=> // -[[]] ??? /=.
 by rewrite neighbour_foldE.
 Qed.
 
-Lemma low_diameterE (g : low_graph.graph):
-  DC.diameter_BFS g = diameter_BFS g.
+Lemma diameter_bfsE (g : low_graph.graph):
+  DC.diameter_bfs g = diameter_bfs g.
 Proof.
-rewrite /DC.diameter_BFS /diameter_BFS.
+rewrite /DC.diameter_bfs /diameter_bfs.
 rewrite ifoldE; apply/eq_foldl=> x y.
-by congr N.max; rewrite BFSE.
+by congr N.max; rewrite bfsE.
 Qed.
 
 End Equiv.
@@ -313,7 +313,7 @@ Definition param_BFS y d c updt coll succ :=
 
 End BFSDef.
 
-Section HBFS.
+Section BFSSucc.
 
 Context {T : choiceType} (G : graph T).
 
@@ -322,17 +322,17 @@ Definition Hmk (y : T) : Hstate := mk y 0%nat.
 Definition Hmark (st : Hstate) (y : T) (k : nat) :=
   mark st y k (fun s k=> maxn s.(collect) k).
 Definition Hdequeue (st : Hstate) := dequeue st.  
-Definition HBFS_step (y : Hstate * T * nat) succ :=
+Definition BFS_step_succ (y : Hstate * T * nat) succ :=
   param_BFS_step y (fun _ k _=> k.+1) (fun s k=> maxn s.(collect) k) succ.
-Definition HBFS_iter (y : T) succ := 
+Definition BFS_iter_succ (y : T) succ := 
   param_BFS_iter G y 0%nat 0%nat (fun _ k _=> k.+1) (fun s k=> maxn s.(collect) k) succ.
-Definition HBFS_ (y : T) succ := 
+Definition BFS_succ_ (y : T) succ := 
   param_BFS_ G y 0%nat 0%nat (fun _ k _=> k.+1) (fun s k=> maxn s.(collect) k) succ.
-Definition HBFS (y : T) succ := 
+Definition BFS_succ (y : T) succ := 
   param_BFS G y 0%nat 0%nat (fun _ k _=> k.+1) (fun s k=> maxn s.(collect) k) succ.
-Definition Hdiameter_BFS succ := \max_(i <- vertices G) HBFS i succ.
+Definition diameter_BFS_succ succ := \max_(i <- vertices G) BFS_succ i succ.
 
-End HBFS.
+End BFSSucc.
 
 End HighDiameter.
 
@@ -390,7 +390,7 @@ Definition rel_option {A B : Type} (r : A -> B -> Prop) (x : option A) (y : opti
   |_, _=> False
   end.
 
-Definition succ x := arr_to_seq (neighbours g x).
+Definition low_succ x := arr_to_seq (neighbours g x).
 
 (* Lemma succ_neiE (x : T):
   (x \in vertices G) -> perm_eq (successors G x) (succ x).
@@ -462,9 +462,9 @@ Qed.
 Lemma repr_graph_BFS_mark_fold y s S n: mem_vertex g y -> rel_state s S ->
   rel_state 
     (neighbour_fold (fun i st=> (DC.State.mark st i (N.succ n))) s g y)
-    (foldl (fun St x=> mark St x (nat_of_bin n).+1 (fun s k=> maxn s.(collect) k)) S (succ y)).
+    (foldl (fun St x=> mark St x (nat_of_bin n).+1 (fun s k=> maxn s.(collect) k)) S (low_succ y)).
 Proof.
-move=> yg sS; rewrite neighbour_foldP // /succ.
+move=> yg sS; rewrite neighbour_foldP // /low_succ.
 rewrite -{2}(rel_struct_nei_mem gG) //.
 elim/last_ind: (arr_to_seq _)=> // t h IH.
 rewrite !filter_rcons; case: ifP=> // hg.
@@ -475,16 +475,16 @@ Qed.
 
 Lemma repr_graph_BFS_step (y : int) (s : DC.state) (S : state) (n : N):
   mem_vertex g y -> rel_state s S -> 
-  rel_step (BFS_step g (s, y, n)) (HBFS_step (S, y, nat_of_bin n) succ).
+  rel_step (bfs_step g (s, y, n)) (BFS_step_succ (S, y, nat_of_bin n) low_succ).
 Proof.
 move=> yg sS.
-rewrite /BFS_step /HBFS_step /param_BFS_step.
+rewrite /bfs_step /BFS_step_succ /param_BFS_step.
 move: (repr_graph_BFS_mark_fold n yg sS)=> /[dup] + /repr_graph_BFS_dequeue.
 by case: (dequeue _)=> //=; case: (DC.State.dequeue _).
 Qed.
 
 Lemma repr_graph_BFS_iter (s : DC.state * int * N + DC.state) (S : state * int * nat + state) (n : int):
-  rel_step s S -> rel_step (iofold (fun _=> BFS_step g) n s) (iter n (oapply (HBFS_step^~ succ)) S).
+  rel_step s S -> rel_step (iofold (fun _=> bfs_step g) n s) (iter n (oapply (BFS_step_succ^~ low_succ)) S).
 Proof.
 rewrite /iofold irange0_iota.
 elim: (int_to_nat n)=> // k.
@@ -496,28 +496,28 @@ exact/repr_graph_BFS_step.
 Qed.
 
 Lemma repr_graph_BFS_ (y : int): mem_vertex g y ->
-  rel_option rel_state (BFS_ g y) (HBFS_ G y succ).
+  rel_option rel_state (bfs_ g y) (BFS_succ_ G y low_succ).
 Proof. 
-move=> yg; rewrite /BFS_ /HBFS_ /param_BFS_ /param_BFS_iter iterSr.
+move=> yg; rewrite /bfs_ /BFS_succ_ /param_BFS_ /param_BFS_iter iterSr.
 move/(repr_graph_BFS_step 0 yg): (rel_state_mk yg).
 move/(repr_graph_BFS_iter (length g)).
-rewrite /HBFS_step (rel_struct_card gG).
+rewrite /BFS_step_succ (rel_struct_card gG).
 set I := iofold _ _ _; set I' := iter _ _ _.
 by case: I; case: I'.
 Qed.
  
 Lemma repr_graph_BFS (y : int): mem_vertex g y->
-  BFS g y = HBFS G y succ :> nat.
+  bfs g y = BFS_succ G y low_succ :> nat.
 Proof.
-move=> yg; rewrite /BFS /HBFS /param_BFS.
-move: (repr_graph_BFS_ yg); rewrite /HBFS_.
-case: (BFS_ _ _); case: (param_BFS_ _ _ _)=> //=.
+move=> yg; rewrite /bfs /BFS_succ /param_BFS.
+move: (repr_graph_BFS_ yg); rewrite /BFS_succ_.
+case: (bfs_ _ _); case: (param_BFS_ _ _ _)=> //=.
 by move=> ?? [].
 Qed.
 
-Lemma repr_graph_diameter : diameter_BFS g = Hdiameter_BFS G succ :> nat.
+Lemma repr_graph_diameter : diameter_bfs g = diameter_BFS_succ G low_succ :> nat.
 Proof.
-rewrite /diameter_BFS /Hdiameter_BFS /ifold.
+rewrite /diameter_bfs /diameter_BFS_succ /ifold.
 rewrite (rel_struct_vtx_set gG) big_imfset //= undup_id ?uniq_irange //.
 rewrite (perm_big (irange0 (length g))).
 - apply/uniq_perm=> //; try exact/uniq_irange.
@@ -692,8 +692,6 @@ Proof.
 move=> src_p dst_p; rewrite /size_path /= size_behead size_belast.
 rewrite prednK //; exact/frontier_epath_n0.
 Qed.
-
-
 
 End Utils.
 
@@ -1072,9 +1070,9 @@ case: rs=> [|[y' k'] t rq_rs].
 Qed.
 
 Lemma Hstep_inv (s : Hstate) y k:
-  inv_step (s,y,k) -> inv_step_sum (HBFS_step (s, y, k) succ).
+  inv_step (s,y,k) -> inv_step_sum (BFS_step_succ (s, y, k) succ).
 Proof.
-move=> inv_syk; rewrite /HBFS_step /BFS_step.
+move=> inv_syk; rewrite /BFS_step_succ /param_BFS_step.
 apply/(@Hdequeue_inv _ y k).
 - exact: Hmark_fold_inv.
 - exact: Hmark_fold_explored.
@@ -1082,10 +1080,10 @@ Qed.
 
 Lemma Hstep_inv_end (s : Hstate) y k:
   inv_step (s,y,k) ->
-  if (HBFS_step (s,y,k) succ) is inr Sr then
+  if (BFS_step_succ (s,y,k) succ) is inr Sr then
   (forall p : epath G, src p = x -> dst p \in visited Sr) else True.
 Proof.
-move=> inv_syk; rewrite /HBFS_step /param_BFS_step.
+move=> inv_syk; rewrite /BFS_step_succ /param_BFS_step.
 case/boolP: (has (fun z => z \notin visited s) (succ y))=> succ_vis.
 - have:= (Hmark_foldE k succ_vis); rewrite /Hmark_fold => ->.
   rewrite /dequeue /=.
@@ -1120,7 +1118,7 @@ Section HIter.
 
 Definition HIter n :=
   iter n
-  (oapply (fun y=> HBFS_step y succ)) 
+  (oapply (fun y=> BFS_step_succ y succ)) 
   (inl ((mk x 0), x, 0)).
 
 Lemma HIter_inv n: inv_step_sum (HIter n).
@@ -1196,9 +1194,9 @@ case/boolP: (has (fun z => z \notin visited s) (succ y))=> succ_vis.
     by rewrite negbK eq_refl.
 Qed.
 
-Lemma HBFS_iterP_ : if HBFS_iter G x succ is inr Sr then True else False.
+Lemma BFS_iter_succP_ : if BFS_iter_succ G x succ is inr Sr then True else False.
 Proof.
-rewrite /HBFS_iter /param_BFS_iter.
+rewrite /BFS_iter_succ /param_BFS_iter.
 move: (HIter_inv #|`vertices G|.+1) (HIter_nE #|`vertices G|.+1).
 rewrite /HIter; case: (iter _ _ _)=> //=.
 case=> -[s y] k /= [inv_s _ _ _ _].
@@ -1207,14 +1205,14 @@ apply/negP; rewrite ltnNge negbK; apply/fsubset_leq_card/fsubsetP=> z.
 by rewrite !inE /= => /andP []; case: inv_s=> _ _ /fsubsetP /[apply].
 Qed.
 
-Lemma HBFS_iterP : if HBFS_iter G x succ is inr Sr then
+Lemma BFS_iter_succP : if BFS_iter_succ G x succ is inr Sr then
   inv_state Sr /\ forall p: epath G, src p = x -> dst p \in Sr.(visited) else False.
 Proof.
-move: HBFS_iterP_; rewrite /HBFS_iter /param_BFS_iter.
+move: BFS_iter_succP_; rewrite /BFS_iter_succ /param_BFS_iter.
 elim: (#|`vertices G|.+1)=> //= n.
-move: (HIter_inv n); rewrite /HIter /HBFS_step.
+move: (HIter_inv n); rewrite /HIter /BFS_step_succ.
 case: (iter n _ _)=> //= -[[S y] k] inv_syk _.
-move: (Hstep_inv_end inv_syk) (Hstep_inv inv_syk); rewrite /HBFS_step.
+move: (Hstep_inv_end inv_syk) (Hstep_inv inv_syk); rewrite /BFS_step_succ.
 by case: (param_BFS_step _ _ _).
 Qed.
 
@@ -1225,26 +1223,26 @@ End BFS.
 
 Section Diameter.
 
-Lemma BFSP x: x \in vertices G -> 
-  HBFS G x succ = 
+Lemma BFS_succP x: x \in vertices G -> 
+  BFS_succ G x succ = 
   \max_(p : epath G | is_shortest_epath p && (src p == x)) size_path p.
 Proof.
-move=> xG; move: (HBFS_iterP xG).
-rewrite /HBFS /param_BFS /param_BFS_ /HBFS_iter.
+move=> xG; move: (BFS_iter_succP xG).
+rewrite /BFS_succ /param_BFS /param_BFS_ /BFS_iter_succ.
 case: param_BFS_iter=> //= s [[coll_s x_vis_s vix_vtx_s] path_s].
 rewrite coll_s.
 apply/eq_bigl=> p; rewrite /supp_shortest andbA andbC andbA.
 apply/andb_idr=> /andP [_ /eqP]; exact: path_s.
 Qed.
 
-Lemma HdiameterE : diameter G = Hdiameter_BFS G succ.
+Lemma diameter_succP : diameter G = diameter_BFS_succ G succ.
 Proof.
-rewrite /diameter /Hdiameter_BFS big_seq_fsetE /=.
+rewrite /diameter /diameter_BFS_succ big_seq_fsetE /=.
 apply/le_anti/andP; split.
 - apply/bigmax_leqP=> p sht_p; apply/(bigmax_sup [`mem_src p])=> //.
-  rewrite BFSP ?fsvalP //; apply/(bigmax_sup p)=> //=.
+  rewrite BFS_succP ?fsvalP //; apply/(bigmax_sup p)=> //=.
   by rewrite sht_p eq_refl.
-- apply/bigmax_leqP=> x _; rewrite BFSP ?fsvalP //.
+- apply/bigmax_leqP=> x _; rewrite BFS_succP ?fsvalP //.
   apply/bigmax_leqP=> p /andP [sht_p] _.
   exact:leq_bigmax_cond.
 Qed.
@@ -1255,27 +1253,27 @@ End DiameterProof.
 
 Section HighBFS.
 
-Definition high_BFS {T : choiceType} (G : graph T) x:=
-  HBFS G x (successors G).
+Definition BFS {T : choiceType} (G : graph T) x:=
+  BFS_succ G x (successors G).
 
-Definition high_diameter_BFS {T : choiceType} (G : graph T):=
-  Hdiameter_BFS G (successors G).
+Definition diameter_BFS {T : choiceType} (G : graph T):=
+  diameter_BFS_succ G (successors G).
 
-Lemma high_BFSE {T : choiceType} (G : graph T) x:
+Lemma BFSE {T : choiceType} (G : graph T) x:
   x \in vertices G -> 
-  high_BFS G x = eccentricity G x.  
-Proof. by move=> xG; rewrite /high_BFS BFSP. Qed.
+  BFS G x = eccentricity G x.  
+Proof. by move=> xG; rewrite /BFS BFS_succP. Qed.
 
-Lemma high_diameter_BFSE {T : choiceType} (G : graph T):
-  high_diameter_BFS G = diameter G.
-Proof. by rewrite /high_diameter_BFS -HdiameterE. Qed.
+Lemma diameter_BFSE {T : choiceType} (G : graph T):
+  diameter_BFS G = diameter G.
+Proof. by rewrite /diameter_BFS -diameter_succP. Qed.
 
-Lemma high_BFS_diameter_le {T : choiceType} (G : graph T) x:
+Lemma BFS_diameter_le {T : choiceType} (G : graph T) x:
   x \in vertices G ->
-  high_BFS G x <= diameter G.
+  BFS G x <= diameter G.
 Proof.
-move=> xG; rewrite -high_diameter_BFSE /high_BFS /high_diameter_BFS.
-rewrite /Hdiameter_BFS big_seq_fsetE /=.
+move=> xG; rewrite -diameter_BFSE /BFS /diameter_BFS.
+rewrite /diameter_BFS_succ big_seq_fsetE /=.
 exact/(bigmax_sup [`xG]).
 Qed.
 
@@ -1286,10 +1284,10 @@ Context {T1 T2 : choiceType} (G1 : graph T1) (G2 : graph T2) (f : T1 -> T2).
 Hypothesis G1G2 : gisof G1 G2 f.
 
 Lemma gisof_high_BFSE x : x \in vertices G1 ->
-  high_BFS G1 x = high_BFS G2 (f x).
+  BFS G1 x = BFS G2 (f x).
 Proof.
 case/gisofE: G1G2=> f_inj _ _.
-move=> xG1; rewrite !high_BFSE // -?(gisof_vtx G1G2) ?in_imfset //.
+move=> xG1; rewrite !BFSE // -?(gisof_vtx G1G2) ?in_imfset //.
 apply/anti_leq/andP; split.
 - apply/bigmax_leqP=> p /andP [shtt_p /eqP src_p].
   rewrite (size_epath_gisof G1G2).
@@ -1311,18 +1309,18 @@ apply/anti_leq/andP; split.
 Qed.
 
 Lemma gisof_high_diameter : 
-  high_diameter_BFS G1 = high_diameter_BFS G2.
+  diameter_BFS G1 = diameter_BFS G2.
 Proof.
-rewrite /high_diameter_BFS /Hdiameter_BFS -(gisof_vtx G1G2) big_imfset /=.
+rewrite /diameter_BFS /diameter_BFS_succ -(gisof_vtx G1G2) big_imfset /=.
   by case/gisofE: G1G2.
 under eq_big_seq=> /= i iG1. 
-  move:(gisof_high_BFSE iG1); rewrite /high_BFS => ->.
+  move:(gisof_high_BFSE iG1); rewrite /BFS => ->.
 over. by [].
 Qed.
 
 Lemma gisof_diameter : diameter G1 = diameter G2.
 Proof.
-rewrite -!high_diameter_BFSE.
+rewrite -!diameter_BFSE.
 exact: gisof_high_diameter.
 Qed.
 
@@ -1332,19 +1330,19 @@ Section RelGraph.
 Section RelStruct.
 
 Lemma rel_struct_BFS g G: rel_structure g G -> forall x, mem_vertex g x->
-  BFS g x = high_BFS G x :> nat.
+  bfs g x = BFS G x :> nat.
 Proof.
-move=> gG x xg; rewrite (repr_graph_BFS gG) // /high_BFS !BFSP //; try
+move=> gG x xg; rewrite (repr_graph_BFS gG) // /BFS !BFS_succP //; try
   by rewrite -(rel_struct_vtx gG).
 move=> j jG; rewrite /succ (rel_struct_succ gG) ?(rel_struct_vtx gG) //.
 by move=> ?; rewrite !inE.
 Qed.
 
 Lemma rel_struct_diameter: (rel_structure =~> (fun x y=> nat_of_bin x = y))
-  diameter_BFS diameter.
+  diameter_bfs diameter.
 Proof.
 move=> g G gG.
-rewrite (repr_graph_diameter gG) (@HdiameterE _ _ (succ g)) //.
+rewrite (repr_graph_diameter gG) (@diameter_succP _ _ (low_succ g)) //.
 move=> x xG; rewrite /succ (rel_struct_succ gG) ?(rel_struct_vtx gG) //.
 by move=> ?; rewrite !inE.
 Qed.
@@ -1359,16 +1357,16 @@ Lemma rel_graph_eccentricity gl G:
   @rel_graph_r _ _ r gl G -> 
   forall i x, mem_vertex gl.1 i-> x \in vertices G->
   r gl.2.[i] x-> 
-  nat_of_bin (BFS gl.1 i) = eccentricity G x.
+  nat_of_bin (bfs gl.1 i) = eccentricity G x.
 Proof.
 move=> r_eq; case=> G' /[dup] glG' [_ [gG' lL] G'G] i x ig xG ix.
 rewrite (rel_struct_BFS gG') // (gisof_high_BFSE G'G) -?(rel_struct_vtx gG') //.
-by rewrite -(rel_graph_r_spec r_eq glG' G'G ig xG ix) high_BFSE.
+by rewrite -(rel_graph_r_spec r_eq glG' G'G ig xG ix) BFSE.
 Qed.
 
 Lemma rel_graph_diameter:
   (@rel_graph_r _ _ r =~> (fun x y=> nat_of_bin x = y))
-  (fun gl=> diameter_BFS gl.1) diameter.
+  (fun gl=> diameter_bfs gl.1) diameter.
 Proof.
 apply/rel_equiv_func; [exact:rel_equiv_refl|exact:rel_comp_eqR|].
 apply/(rel_comp_func (g:=(fun x=> diameter x.1))).

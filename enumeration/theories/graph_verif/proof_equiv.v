@@ -665,7 +665,7 @@ Context (A_low : Com.matrix) (b_low : Com.vector) (A : 'M[rat]_(m,n)) (b : 'cV[r
 Hypothesis Po_Ab : rel_poly (A_low, b_low) (A,b).
 
 Definition high_diameter_check {T : choiceType} (G : graph T) (X : T):=
-  [&& (n < m)%nat, (X \in vertices G) & (high_BFS G X > m - n)%nat].
+  [&& (n < m)%nat, (X \in vertices G) & (BFS G X > m - n)%nat].
 
 Lemma high_diameter_check_struct x:
   (rel_structure =~> eq) 
@@ -677,7 +677,7 @@ move=> g G gG; apply/idP/idP.
   split.
   + by rewrite (rel_Po_r_n Po_Ab) (rel_Po_r_m Po_Ab) -ltEint_nat.
   + abstract: xG; rewrite -?(rel_struct_vtx gG) //.
-  + move: m_sub_n; rewrite (rel_struct_BFS gG) // /high_BFS BFSP //.
+  + move: m_sub_n; rewrite (rel_struct_BFS gG) // /BFS BFS_succP //.
     rewrite ltEint_nat sub_intE // -(rel_Po_r_m Po_Ab) -(rel_Po_r_n Po_Ab).
     move/leq_trans; apply; exact/nat_to_int_le.
 - case/and3P=> m_n xG mn_BFS [:xg m_n_int]; apply/and3P; split.
@@ -687,7 +687,7 @@ move=> g G gG; apply/idP/idP.
   + rewrite ltEint_nat sub_intE // -(rel_Po_r_m Po_Ab) -(rel_Po_r_n Po_Ab).
     apply/(leq_trans mn_BFS); rewrite (rel_struct_BFS gG) //.
     rewrite nat_to_intK // inE; apply/(@leq_ltn_trans (#|`vertices G|)).
-    * rewrite high_BFSE //; apply/bigmax_leqP=> p _; exact/size_path_le.
+    * rewrite BFSE //; apply/bigmax_leqP=> p _; exact/size_path_le.
     * rewrite (rel_struct_card gG); exact/int_thresholdP.
 Qed.
 
@@ -703,7 +703,7 @@ Proof.
 case: gG=> -[G' L'] [_] [/= gG' _] GLG.
 rewrite (high_diameter_check_struct x gG').
 case/and3P=> _ ?; rewrite (gisof_high_BFSE GLG) //=.
-move/leq_trans; apply; apply/high_BFS_diameter_le.
+move/leq_trans; apply; apply/BFS_diameter_le.
 by rewrite -(gisof_vtx GLG) /=; apply/imfsetP; exists x.
 Qed.
 
