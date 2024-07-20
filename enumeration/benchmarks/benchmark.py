@@ -245,8 +245,6 @@ def create(args):
     del TASKS["graph_certif_conversion_text"]
   if not compute:
     del TASKS["graph_certif_execution_compute"]
-  print(TASKS)
-  time.sleep(5)
   name = polytope_name(polytope,param)
   gen_lrs(polytope,param)
   make_benchmarks(name,TASKS)
