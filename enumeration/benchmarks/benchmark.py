@@ -183,8 +183,8 @@ def execution(algo,compute=False):
     tgtdir = os.path.join(CWD, *tgtpath)
     os.makedirs(tgtdir,exist_ok = True)
     jobdir = os.path.join(JOB_DIR, algo)
-    coqjobs.coqjob(name, dune_name_algo(name, algo), dune_name_certif(name, algo), PREREQUISITES[algo], jobdir, tgtdir)
-    res[f"Execution of {algo}"] = job(tgtdir,*tgtpath)
+    coqjobs.coqjob(name, dune_name_algo(name, algo), dune_name_certif(name, algo), PREREQUISITES[algo], jobdir, tgtdir, compute)
+    res[f"Execution of {algo}" + (", with compute" if compute else "")] = job(tgtdir,*tgtpath)
     return res
   return worker
 
