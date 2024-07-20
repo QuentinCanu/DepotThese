@@ -213,7 +213,10 @@ TASKS = {
   "graph_certif_execution" : execution("graph_certif"),
   "diameter_generation" : generation("diameter", "graph_certif"),
   "diameter_conversion" : conversion("diameter"),
-  "diameter_execution" : execution("diameter")
+  "diameter_execution" : execution("diameter"),
+  "improved_generation" : generation("improved", "common"),
+  "improved_conversion" : conversion("improved"),
+  "improved_execution" : execution("improved")
 }
 
 HIRSCH_TASKS = {

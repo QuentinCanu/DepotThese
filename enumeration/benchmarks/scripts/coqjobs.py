@@ -21,7 +21,7 @@ DUNE = r'''
 HIRSCH_CEX_VALUES = {"poly20dim21" : "21", "poly23dim24" : "24"}
 
 # --------------------------------------------------------------------
-def coqjob(name, duneName, duneDataname, duneAlgoname, jobdir, tgtdir):
+def coqjob(name, duneName, duneDataname, duneAlgoname, jobdir, tgtdir, compute=False):
 
     for filename in os.listdir(jobdir):
         if os.path.splitext(filename)[1] != '.v':
@@ -31,6 +31,8 @@ def coqjob(name, duneName, duneDataname, duneAlgoname, jobdir, tgtdir):
         contents = contents.replace('__NAME__', name)
         contents = contents.replace('__DATA__', f'{duneDataname}')
         contents = contents.replace('__VALUE__', HIRSCH_CEX_VALUES.get(name,""))
+        if compute:
+            contents = contents.replace('vm_cast_no_check', 'exact_no_check')
         with open(os.path.join(tgtdir, filename), 'w') as stream:
             stream.write(contents)
 
