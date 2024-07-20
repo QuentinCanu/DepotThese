@@ -26,8 +26,8 @@ def make_dim_full(l_vtx, n):
         
 START_BFS = {"poly20dim21" : 394, "poly23dim24" : 7200}
 
-def common2hirsch(name, dict):
-  vertices = dict["l_vtx"]
+def certif2hirsch(name, dict):
+  vertices = dict["lbl_vtx"]
   n = len(dict["A"][0])
   origin, map_dim, inv_dim = make_dim_full(vertices, n)
   start = START_BFS[name]

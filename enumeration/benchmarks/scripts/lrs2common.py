@@ -110,13 +110,6 @@ def rank_1_update(A,inv,I,J):
         else:
             res[r] = inv[s] / Ars
     return res
-
-# def from_inverse_to_lbl(n,bases,vertices,inverses):
-#     res = []
-#     for vtx, inv in zip(vertices,inverses):
-#         translate = [list_of_gmp_matrix(- col)[0] if col is not None else ["0" for _ in range(n)] for col in inv]
-#         res.append([vtx] + translate)
-#     return list(zip(bases,res))
         
 def get_inverses(A,bases,graph,root=0):
     graph_lex = nx.Graph({i:edges for i,edges in enumerate(graph)})
@@ -165,7 +158,7 @@ def get_edge_inv(G_lex, G_simpl, morf):
                 edge_inv[morf[i]][j_] = (i,nei)
     return edge_inv
 
-# Get final certificates (Farkas, dim_full)
+# Get final certificates (Farkas)
 # -------------------------------------------------------------------
 def get_farkas_cert(A, m, n):
     A = fk.to_gmp_matrix(A).transpose()
@@ -174,48 +167,6 @@ def get_farkas_cert(A, m, n):
         cert_pos.append(list(map(bigq,fk.farkas_gen(A, n, m, k))))
         cert_neg.append(list(map(bigq,fk.farkas_gen(-A, n, m, k))))
     return cert_pos, cert_neg
-        
-START_BFS = {"poly20dim21" : 394, "poly23dim24" : 7200}
-
-# Debug functions
-# -------------------------------------------------------------------
-# def lex_order_gmp(A,B):
-#     p,q = A.shape
-#     for i in range(p):
-#         for j in range(q):
-#             if A[i,j].element < B[i,j].element:
-#                 return False, i
-#             if A[i,j].element > B[i,j].element:
-#                 break
-#     return True, None
-
-
-# def lbl_lex_debug(A,b,lbl_lex,trials):
-#     print("Debug function : verifies that all given bases are lex-feasible")
-#     m = len(A)
-#     gmp_A = fk.to_gmp_matrix(A)
-#     b_pert = [[x] + [- int(k==i) for k in range(m)] for i,x in enumerate(b)]
-#     gmp_b_pert = fk.to_gmp_matrix(b_pert)
-#     concerned_vertices = {}
-#     res = []
-#     for i in tqdm.tqdm(range(trials), desc="Attempts to find non-feasible lex-bases"):
-#         basis, point = lbl_lex[i]
-#         gmp_X = fk.to_gmp_matrix([[fc.Fraction(x) for x in col] for col in point]).transpose()
-#         test, line = lex_order_gmp(gmp_A * gmp_X, gmp_b_pert)
-#         if not test:
-#             print(f"{basis} is not lex-feasible")
-#             print(gmp_X.transpose())
-#             print("line : ", line)
-
-# def print_lbl_lex(lbl_lex):
-#     for base, point in lbl_lex:
-#         print("Base : ", [i + 1 for i in base])
-#         print("Point : ",  point[0])
-#         print("Inverse : ")
-#         for i in range(len(point[0])):
-#             print([point[j+1][i] for j in base])
-#         print()
-
 
 
 # Main function, write a json file with one certificate per entry
@@ -239,17 +190,7 @@ def lrs2common(name):
     bound_pos, bound_neg = get_farkas_cert(A,len(A),len(A[0]))
     et = time.time()
     print(f"{et - st:.2f}s")
-    # lbl_lex_debug(A,b,lbl_lex,len(lbl_lex)) #Todo : to use on birkhoff_4
-    # print_lbl_lex(lbl_lex) #also in case of debug
-    # print(f"Computation of the vertex-edge graph together with image graph certificates : ", end="", flush=True)
-    # st = time.time()
-    # morph, morph_inv = get_morph(bases, dupl_vertices, lbl_vtx)
-    # G_vtx = get_graph_vtx(G_lex,morph,len(lbl_vtx))
-    # edge_inv = get_edge_inv(G_lex,G_vtx,morph)
-    # et = time.time()
-    # print(f"{et - st:.2f}s")
 
-    # # Store in a dictionnary
     tgtdict =   {
                 "A"         : A,
                 "b"         : b,
@@ -260,5 +201,15 @@ def lrs2common(name):
                 "bound_pos" : bound_pos,
                 "bound_neg" : bound_neg
                 }
+    # tgtdict["A"] = the matrix corresponding to the polytope
+    # tgtdict["b"] = the vector corresponding to the polytope
 
+    # tgtdict["bases"] = the list of the lex-feasible bases of the polytope, sorted in lexicographic order
+    # tgtdict["vertices"] = the list of the associated vertices, in the same order as the bases
+    # tgtdict["inverses"] = the list of the associated inverses, i.e, A_I^{-1}, in the same order as the bases I
+
+    # tgtdict["g_lex"] = the adjacency list of the lex-graph
+
+    # tgtdict["bound_pos"] = farkas certificate (u) such that u_i^T A = \delta_i 
+    # tgtdict["bound_neg"] = farkas certificate (u) such that u_i^T A = - \delta_i 
     return tgtdict

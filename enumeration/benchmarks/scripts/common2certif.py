@@ -62,7 +62,7 @@ def get_edge_inv(G_lex, G_simpl, morf):
     return edge_inv
 
 # -------------------------------------------------------------------
-def common2certif(common):
+def common2certif(name, common):
     res = {}
     res["A"] = common["A"]
     res["b"] = common["b"]
