@@ -274,7 +274,7 @@ Module R1 := Rank1Certif.
 
 (* ---------------------------------------------------------------------------- *)
 
-Module CertifPredVerif.
+(* Module CertifPredVerif.
 
 
 
@@ -313,4 +313,4 @@ Definition certif_pred_correct certif_bases certif_pred :=
     let I := certif_bases.[idx] in
     adjacent I J r s) (length certif_bases).
 
-End CertifPredVerif.
+End CertifPredVerif. *)

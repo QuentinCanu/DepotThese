@@ -4,8 +4,6 @@
 import json, sys, re, os, argparse as argp
 import subprocess as sp, shutil as sh
 
-from . import core
-
 # --------------------------------------------------------------------
 DUNE = r'''
 (coq.theory

@@ -5,10 +5,8 @@ import os, argparse as argp, subprocess as sp, abc
 import itertools as it, fractions as fc
 import math
 
-if __name__ == "__main__":
-    import core
-else:
-    from . import core
+CWD = os.getcwd()
+DATA_DIR = os.path.join(CWD,"data")
 
 def usage_and_exit():
     print("Incorrect usage of parameter")
@@ -35,9 +33,9 @@ class LRS(abc.ABC):
 
     def __call__(self):
       prefix  = f"{self.kind}_" + "_".join([str(elt) for elt in self.args])
-      inefile = core.resource(prefix, "lrs", f"{prefix}.ine")
+      inefile = os.path.join(DATA_DIR, prefix, "lrs", f"{prefix}.ine")
 
-      os.makedirs(core.resource(prefix, "lrs"), exist_ok = True)
+      os.makedirs(os.path.join(DATA_DIR, prefix, "lrs"), exist_ok = True)
 
       with open(inefile, "w") as stream:
         self.generate(stream)

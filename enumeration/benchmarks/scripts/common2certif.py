@@ -8,7 +8,6 @@ import networkx as nx
 import tqdm
 import random as rd
 from . import farkas as fk
-from . import core
 
 import sympy as sym
 from sympy.polys.domains  import QQ

@@ -32,7 +32,8 @@ GENERATORS = {
 PREREQUISITES = {
   "graph_certif" : "PolyhedraHirschVerif",
   "diameter" : "PolyhedraHirsch",
-  "improved" : "PolyhedraHirschImprVerif"
+  "improved" : "PolyhedraHirschImprVerif",
+  "hirsch" : "PolyhedraHirsch"
 }
 
 
@@ -158,23 +159,26 @@ def conversion(certif_type, text=False):
     certif_path = os.path.join(DATA_DIR, name, "certificates", certif_type, name+".json")
     with open(certif_path) as stream:
       certif = json.load(stream)
-
-    binpath = ["data", name, certif_type, "bin_certif"]
-    bindir = os.path.join(CWD, *binpath)
-    os.makedirs(bindir, exist_ok = True)
-    st = time.time()
-    bench = dict2bin.dict2bin(bindir,certif)
-    et = time.time()
-    res["generation of bin certificates"] = {"generation time of bin files" : et - st, "size of bin files" : bench}
-    bin2coq.bin2coq(dune_name_certif(name, certif_type), bindir)
-    res["compilation of bin certificates"] = certif_compilation(bindir, *binpath)
-
+    
     if text:
       textpath = ["data", name, certif_type, "text_certif"]
       textdir = os.path.join(CWD, *textpath)
       os.makedirs(textdir, exist_ok = True)
-      dict2text.dict2text(dune_name_certif(name, certif_type, True), textdir, certif)
+      st = time.time()
+      bench = dict2text.dict2text(dune_name_certif(name, certif_type, True), textdir, certif)
+      et = time.time()
+      res["conversion into plain text certificates"] = {"time" : et - st, "size of files" : bench}
       res["compilation of text certificates"] = certif_compilation(textdir, *textpath)
+    else:
+      binpath = ["data", name, certif_type, "bin_certif"]
+      bindir = os.path.join(CWD, *binpath)
+      os.makedirs(bindir, exist_ok = True)
+      st = time.time()
+      bench = dict2bin.dict2bin(bindir,certif)
+      et = time.time()
+      res["conversion into bin certificates"] = {"time" : et - st, "size of bin files" : bench}
+      bin2coq.bin2coq(dune_name_certif(name, certif_type), bindir)
+      res["compilation of bin certificates"] = certif_compilation(bindir, *binpath)
     return res
   return worker
 
@@ -186,7 +190,7 @@ def execution(algo,compute=False):
     tgtdir = os.path.join(CWD, *tgtpath)
     os.makedirs(tgtdir,exist_ok = True)
     jobdir = os.path.join(JOB_DIR, algo)
-    coqjobs.coqjob(name, dune_name_algo(name, algo), dune_name_certif(name, algo), PREREQUISITES[algo], jobdir, tgtdir, compute)
+    coqjobs.coqjob(name, dune_name_algo(name, algo,compute), dune_name_certif(name, algo), PREREQUISITES[algo], jobdir, tgtdir, compute)
     res[f"Execution of {algo}" + (", with compute" if compute else "")] = job(tgtdir,*tgtpath)
     return res
   return worker
@@ -212,8 +216,10 @@ def make_benchmarks(name,taskdict):
 TASKS = {
   "lrs" : compute_lrs,
   "graph_certif_generation" : generation("graph_certif", "common","graph_certif"),
-  "graph_certif_conversion" : conversion("graph_certif", text=True),
+  "graph_certif_conversion" : conversion("graph_certif"),
+  "graph_certif_conversion_text" : conversion("graph_certif", text=True),
   "graph_certif_execution" : execution("graph_certif"),
+  "graph_certif_execution_compute" : execution("graph_certif",compute=True),
   "diameter_generation" : generation("diameter", "graph_certif", "diameter"),
   "diameter_conversion" : conversion("diameter"),
   "diameter_execution" : execution("diameter"),
@@ -224,13 +230,23 @@ TASKS = {
 
 HIRSCH_TASKS = {
     "lrs" : compute_lrs,
-    "hirsch_generation" : generation("common","graph_certif","hirsch"), 
+    "hirsch_generation" : generation("hirsch","common", "graph_certif", "hirsch"), 
     "hirsch_conversion" : conversion("hirsch"),
-    "hirsch_execution" : execution("hirsch")
+    "hirsch_execution" : execution("hirsch"),
+    "improved_generation" : generation("improved", "common", "improved"),
+    "improved_conversion" : conversion("improved"),
+    "improved_execution" : execution("improved")
   }
 
 def create(args):
   polytope,param = args.polytope, args.param
+  text,compute = args.text,args.compute
+  if not text:
+    del TASKS["graph_certif_conversion_text"]
+  if not compute:
+    del TASKS["graph_certif_execution_compute"]
+  print(TASKS)
+  time.sleep(5)
   name = polytope_name(polytope,param)
   gen_lrs(polytope,param)
   make_benchmarks(name,TASKS)
@@ -269,6 +285,8 @@ def main():
   create_parser = subparsers.add_parser("create")
   create_parser.add_argument("polytope", choices=POLYTOPES)
   create_parser.add_argument("param", type=int, nargs=1)
+  create_parser.add_argument("--text", action="store_true")
+  create_parser.add_argument("--compute", action="store_true")
   create_parser.set_defaults(func=create)
 
   clean_parser = subparsers.add_parser("clean")

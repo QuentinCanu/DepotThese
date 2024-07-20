@@ -8,11 +8,13 @@ import networkx as nx
 import tqdm
 import random as rd
 from . import farkas as fk
-from . import core
 
 import sympy as sym
 from sympy.polys.domains  import QQ
 from sympy.polys.matrices import DomainMatrix
+
+CWD = os.getcwd()
+DATA_DIR = os.path.join(CWD,"data")
 
 # Common functions
 # -------------------------------------------------------------------
@@ -22,7 +24,7 @@ def bigq(x):
 # Extract polyhedron information from lrs files
 # -------------------------------------------------------------------
 def get_polyhedron_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ine")
+    input = os.path.join(DATA_DIR, name,"lrs",f"{name}.ine")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
@@ -34,7 +36,7 @@ def get_polyhedron_from_lrs(name):
     return A, b
 
 def get_bases_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ext")
+    input = os.path.join(DATA_DIR,name,"lrs",f"{name}.ext")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
