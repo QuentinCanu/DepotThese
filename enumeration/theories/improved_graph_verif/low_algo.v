@@ -34,7 +34,7 @@ Definition cmp_sat (A : matrix) (b : vector)
   (fun k i=> 
     if (i =? 0)%uint63 then (BigQUtils.bigQ_dot Al x,k) else
     if (Uint63.pred i =? I.[k])%uint63 then 
-      (BigQUtils.bigQ_dot Al X.[k],Uint63.succ k)
+      (BigQUtils.bigQ_dot Al (BigQUtils.bigQ_scal_rV (-1)%bigQ X.[k]),Uint63.succ k)
     else (0%bigQ,k)
   )
   (fun k i=> 

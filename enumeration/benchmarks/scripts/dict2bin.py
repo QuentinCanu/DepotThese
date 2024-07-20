@@ -31,6 +31,9 @@ DESCRIPTORS = dict(
     start     = 'I',
     map_dim   = '[I]',
     inv_dim   = '[[Q]]',
+    bases = '[[I]]',
+    vertices = '[[Q]]',
+    inverses = '[[[Q]]]'
 )
 
 DESCRIPTORS = {

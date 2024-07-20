@@ -24,11 +24,15 @@ GENERATORS = {
     "common" : lrs2common.lrs2common,
     "graph_certif" : common2certif.common2certif,
     "hirsch" : certif2hirsch.certif2hirsch,
-    "diameter" : (lambda x,y : y)
+    "diameter" : (lambda name,certif : {"g_vtx" : certif["g_vtx"]}),
+    "improved" : (lambda name, certif : 
+      {i : certif[i] for i in 
+       ["A","b","g_lex","vertices","bases","inverses"]})
     }
 PREREQUISITES = {
   "graph_certif" : "PolyhedraHirschVerif",
-  "diameter" : "PolyhedraHirsch"
+  "diameter" : "PolyhedraHirsch",
+  "improved" : "PolyhedraHirschImprVerif"
 }
 
 
@@ -74,7 +78,6 @@ def gen_lrs(polytope, param):
     if polytope == "cyclic":
       genlrs.generate_lrs(polytope, param, 2*param)
     else:
-      print(param)
       genlrs.generate_lrs(polytope, param[0])
 
 # --------------------------------------------------------------------
@@ -211,10 +214,10 @@ TASKS = {
   "graph_certif_generation" : generation("graph_certif", "common","graph_certif"),
   "graph_certif_conversion" : conversion("graph_certif", text=True),
   "graph_certif_execution" : execution("graph_certif"),
-  "diameter_generation" : generation("diameter", "graph_certif"),
+  "diameter_generation" : generation("diameter", "graph_certif", "diameter"),
   "diameter_conversion" : conversion("diameter"),
   "diameter_execution" : execution("diameter"),
-  "improved_generation" : generation("improved", "common"),
+  "improved_generation" : generation("improved", "common", "improved"),
   "improved_conversion" : conversion("improved"),
   "improved_execution" : execution("improved")
 }
