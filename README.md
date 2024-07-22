@@ -80,3 +80,7 @@ The benchmarks for the two counter-examples to the Hirsch are slightly different
 or
 
 	>$./benchmarks.py hirsch poly23dim24
+
+Once the benchmarks for all the polytopes you want are generated, you can type the following command to generate a csv file
+
+	>$./benchmarks.py csv

@@ -327,30 +327,40 @@ def hirsch(args):
   make_benchmarks(name,HIRSCH_TASKS)
 
 # --------------------------------------------------------------------
-def csv_gen(_):
-  benchmarks = {}
-  example = None
-  for dir in os.listdir(DATA_DIR):
-    if dir not in HIRSCH_CEX:
-      json_path = os.path.join(DATA_DIR,dir,f"benchmarks_{dir}.json")
-      if os.path.exists(json_path):
-        example = dir if example is None else example
-        with open(json_path) as stream:
-          bench = json.load(stream)
-          res = {}
-          for fst,vals in bench.items():
-            for snd,val in vals.items():
-              res[" : ".join([fst,snd])] = val
-          benchmarks[dir] = res
-  if example is None:
-    print("There is no benchmarks to work with")
-  fieldnames = ["polytope"] + list(benchmarks[example].keys())
-  with open("benchmarks.csv", "w") as csv_stream:
+def to_csv(json_paths, tgtfile):
+  if len(json_paths) == 0:
+    print("there is no benchmark to work with")
+    return None
+  benchmarks = []
+  for (name,path) in json_paths:
+    with open(path) as stream:
+      bench = json.load(stream)
+      res = {}
+      for fst,vals in bench.items():
+        for snd,val in vals.items():
+          res[" : ".join([fst,snd])] = val
+      benchmarks.append((name,res))
+  fieldnames = ["polytope"] + list(benchmarks[0][1].keys())
+  with open(tgtfile, "w") as csv_stream:
     writer = csv.DictWriter(csv_stream, fieldnames=fieldnames)
-
     writer.writeheader()
-    for name in benchmarks.keys():
-      writer.writerow(dict(polytope = name, **benchmarks[name]))
+    for name,res in benchmarks:
+      writer.writerow(dict(polytope = name, **res))
+
+
+def csv_gen(_):
+  hirsch_paths = []
+  other_paths = []
+  for name in os.listdir(DATA_DIR):
+    json_path = os.path.join(DATA_DIR,name,f"benchmarks_{name}.json")
+    if os.path.exists(json_path):
+      if name in HIRSCH_CEX:
+        hirsch_paths.append(name,json_path)
+      else:
+        other_paths.append(name,json_path)
+  to_csv(hirsch_paths, HIRSCH + ".csv")
+  to_csv(other_paths, "benchmarks.csv")
+
 
 # --------------------------------------------------------------------
 def main():
