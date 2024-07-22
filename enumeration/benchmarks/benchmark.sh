@@ -36,3 +36,4 @@
 ./benchmark.py create permutohedron 7
 ./benchmark.py hirsch poly20dim21
 ./benchmark.py hirsch poly23dim24
+./benchmark.py csv
