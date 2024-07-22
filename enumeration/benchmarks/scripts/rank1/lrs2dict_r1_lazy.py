@@ -6,11 +6,12 @@ import argparse as argp
 import math, fractions, random as rd
 import networkx as nx
 from .. import farkas as fk
-from .. import core
-
 import sympy as sym
 from sympy.polys.domains  import QQ
 from sympy.polys.matrices import DomainMatrix
+
+CWD = os.getcwd()
+DATA_DIR = os.path.join(CWD, "data")
 
 # Common functions
 # -------------------------------------------------------------------
@@ -20,7 +21,7 @@ def bigq(x):
 # Extract polyhedron information from lrs files
 # -------------------------------------------------------------------
 def get_polyhedron_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ine")
+    input = os.path.join(DATA_DIR,name,"lrs",f"{name}.ine")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
@@ -32,7 +33,7 @@ def get_polyhedron_from_lrs(name):
     return A, b
 
 def get_bases_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ext")
+    input = os.path.join(DATA_DIR,name,"lrs",f"{name}.ext")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
@@ -274,34 +275,28 @@ def optparser():
     return parser
 
 # -------------------------------------------------------------------
-def lrs2dict(name,hirsch=""):
+def lrs2dict(name):
 
     # Compute everything
     A,b = get_polyhedron_from_lrs(name)
     A,b = poly_scale(A,b)
     bases, bas2vtx, bas2det = get_bases_from_lrs(name)
-    print("Build the lex graph...",end='',flush=True)
-    st = time.time()
     graph_lex = get_lex_graph(len(A), len(A[0]), bases)
-    et = time.time()
-    print(f" in {(et-st):.2f}s")
-    root = 0
-    pred = get_pred(bases, graph_lex, root)
-    init = get_initial_basing_point(A,b,bases,root)
-    st = time.time()
-    heap = get_heap(A,bases,root,pred,init)
-    et = time.time()
-    h = len(heap)
-    print(f"heap for root={root}: time={(et-st):.2f}s & size={h}")
+    idx = 0
+    pred = get_pred(bases, graph_lex, idx)
+    init = get_initial_basing_point(A,b,bases,idx)
+    heap = get_heap(A,bases,idx,pred,init)
+    # h = len(heap)
+    # print(f"heap for root={root}: time={(et-st):.2f}s & size={h}")
     init = [[bigq(elt) if elt is not None else '0' for elt in col] for col in init]
 
-    vtx = get_vtx(bas2vtx)
-    morph, morph_inv = get_morph(bases,vtx,bas2vtx)
-    vtx_eq = get_vtx_eq(bases,morph,len(vtx))
-    dim = get_dim(len(A),vtx_eq,morph_inv)
-    graph_vtx = get_graph_vtx(graph_lex,morph,len(vtx))
-    edge_inv = get_edge_inv(graph_lex,graph_vtx,morph)
-    bound_pos, bound_neg = get_farkas_cert(A,len(A),len(A[0]))
+    # vtx = get_vtx(bas2vtx)
+    # morph, morph_inv = get_morph(bases,vtx,bas2vtx)
+    # vtx_eq = get_vtx_eq(bases,morph,len(vtx))
+    # dim = get_dim(len(A),vtx_eq,morph_inv)
+    # graph_vtx = get_graph_vtx(graph_lex,morph,len(vtx))
+    # edge_inv = get_edge_inv(graph_lex,graph_vtx,morph)
+    # bound_pos, bound_neg = get_farkas_cert(A,len(A),len(A[0]))
 
 
     # Store in a dictionnary
@@ -310,19 +305,19 @@ def lrs2dict(name,hirsch=""):
     tgtjson['A'] = A
     tgtjson['b'] = b
     tgtjson['bases'] = bases
-    tgtjson['pred'] = pred
-    tgtjson['root'] = root
-    tgtjson['heap'] = heap
-    tgtjson['init'] = init
-    tgtjson['graph_lex'] = graph_lex
-    tgtjson['graph_vtx'] = graph_vtx
-    tgtjson['morph'] = morph
-    tgtjson['morph_inv'] = morph_inv
-    tgtjson['edge_inv'] = edge_inv
-    tgtjson['bound_pos'] = bound_pos
-    tgtjson['bound_neg'] = bound_neg
-    tgtjson['dim'] = dim
-    tgtjson['vtx_eq'] = vtx_eq
+    tgtjson['pred_r1'] = pred
+    tgtjson['idx_r1'] = idx
+    tgtjson['heap_lazy'] = heap
+    tgtjson['init_r1'] = init
+    # tgtjson['graph_lex'] = graph_lex
+    # tgtjson['graph_vtx'] = graph_vtx
+    # tgtjson['morph'] = morph
+    # tgtjson['morph_inv'] = morph_inv
+    # tgtjson['edge_inv'] = edge_inv
+    # tgtjson['bound_pos'] = bound_pos
+    # tgtjson['bound_neg'] = bound_neg
+    # tgtjson['dim'] = dim
+    # tgtjson['vtx_eq'] = vtx_eq
     return tgtjson
 
 def dict2json(name,tgtdict):

@@ -180,7 +180,7 @@ Definition lazy_check_all_bases
          | _ => lazy_check_basis (length A) certif_bases certif_pred certif_updates i memory current
          end) (length certif_bases) (Some true, memory, 0%uint63).
 
-Definition full_dimensional (certif_dim : array int63) (memory : array (array (array (option bigQ)))):=
+(* Definition full_dimensional (certif_dim : array int63) (memory : array (array (array (option bigQ)))):=
   IFold.iall (fun i=>
     let kI := certif_dim.[i] in
     if memory.[kI].[0].[i] is Some val then
@@ -208,11 +208,11 @@ Definition label_img
           (*vertex index not in basis, the check has been done in memory*)
         else (k_bas, false)
     ) (length indices) (0%uint63,true)).2
-  ) (length morph).
+  ) (length morph). *)
 
-Definition lazy_rank_1_update A b certif_bases certif_pred root init certif_updates certif_dim morph certif_img:=
+Definition lazy_rank_1_update A b certif_bases certif_pred root init certif_updates :=
   let '(val, memory, _):= lazy_check_all_bases A b certif_bases certif_pred root init certif_updates in
-  (val, full_dimensional certif_dim memory, label_img morph certif_bases certif_img memory).
+  if val is Some true then true else false.
 
 
 End Rank1Certif.
@@ -221,7 +221,7 @@ Module R1 := Rank1Certif.
 
 (* ---------------------------------------------------------------------------- *)
 
-Module CertifPredVerif.
+(* Module CertifPredVerif.
 
 Definition adjacent (I J : array int63) (r s : int63):=
   (IFold.ifold (fun i '(kI,kJ,c)=>
@@ -260,7 +260,7 @@ Definition certif_pred_correct certif_bases certif_pred :=
 
 End CertifPredVerif.
 
-Module CPV := CertifPredVerif.
+Module CPV := CertifPredVerif. *)
 
 (* ---------------------------------------------------------------------------- *)
 

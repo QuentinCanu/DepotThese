@@ -81,19 +81,19 @@ Definition explore
   (certif_bases : array (array int63))
   (certif_vtx : array (array bigQ))
   (certif_pred : array (int63 * (int63 * int63)))
-  (certif_pred_vect : array (array (array bigQ)))
-  main (order : array int63) (steps : int63):=
+  (certif_pred_mx : array (array (array bigQ)))
+  main (order : array int63):=
   IFold.ifold
     (fun i main=>
        let (idx,rs) := certif_pred.[order.[i]] in
        let (r,s) := rs in
-       let Auv := certif_pred_vect.[order.[i]] in
+       let Auv := certif_pred_mx.[order.[i]] in
        let I := certif_bases.[idx] in
        if main.[idx] is Some (M, iters) then
          let M' := update A I r s M Auv in
          if sat_lex A b certif_bases.[order.[i]] certif_vtx.[order.[i]] M' 
          then main.[order.[i] <- Some (M', Uint63.succ iters)] else main
-       else main) steps main.
+       else main) (length order) main.
 
 Definition initial
   (A : array (array bigQ)) (b : array bigQ)
@@ -122,18 +122,18 @@ Definition initial_main
 *)
 
 Definition explore_from_initial
-  A b certif_bases certif_vtx certif_pred certif_pred_vect idx inv order steps:=
-  explore A b certif_bases certif_vtx certif_pred certif_pred_vect (initial_main A b certif_bases certif_vtx idx inv) order steps.
+  A b certif_bases certif_vtx certif_pred certif_pred_mx idx inv order:=
+  explore A b certif_bases certif_vtx certif_pred certif_pred_mx (initial_main A b certif_bases certif_vtx idx inv) order.
 
 Definition vertex_certif A b certif_bases certif_vtx 
-  certif_pred certif_pred_vect idx inv order steps:=
-  let main := explore_from_initial A b certif_bases certif_vtx certif_pred certif_pred_vect idx inv order steps in
-  IFold.ifold (fun i res => res && isSome main.[order.[i]]) steps true.
+  certif_pred certif_pred_mx idx inv order:=
+  let main := explore_from_initial A b certif_bases certif_vtx certif_pred certif_pred_mx idx inv order in
+  PArrayUtils.all isSome main.
 
-Definition nb_iters 
-  A b certif_bases certif_vtx certif_pred certif_pred_vect idx inv order steps:=
-  let main := explore_from_initial A b certif_bases certif_vtx certif_pred certif_pred_vect idx inv order steps in
-  IFold.ifold (fun i res => if main.[order.[i]] is Some (_, iters) then if (res <? iters)%uint63 then iters else res else res) steps 0%uint63.
+(* Definition nb_iters 
+  A b certif_bases certif_vtx certif_pred certif_pred_mx idx inv order steps:=
+  let main := explore_from_initial A b certif_bases certif_vtx certif_pred certif_pred_mx idx inv order in
+  IFold.ifold (fun i res => if main.[order.[i]] is Some (_, iters) then if (res <? iters)%uint63 then iters else res else res) steps 0%uint63. *)
 
 
 End Rank1Certif.
@@ -142,7 +142,7 @@ Module R1 := Rank1Certif.
 
 (* ---------------------------------------------------------------------------- *)
 
-Module CertifPredVerif.
+(* Module CertifPredVerif.
 
 
 
@@ -181,4 +181,4 @@ Definition certif_pred_correct certif_bases certif_pred :=
     let I := certif_bases.[idx] in
     adjacent I J r s) (length certif_bases).
 
-End CertifPredVerif. 
+End CertifPredVerif.  *)

@@ -33,7 +33,18 @@ DESCRIPTORS = dict(
     inv_dim   = '[[Q]]',
     bases = '[[I]]',
     vertices = '[[Q]]',
-    inverses = '[[[Q]]]'
+    inverses = '[[[Q]]]',
+    idx_r1 = 'I',
+    x_I_r1 = '[Q]',
+    inv_r1 = '[[Q]]',
+    order_r1 = '[I]',
+    pred_r1 = '[(I,I,I)]',
+    det_r1 = 'Q',
+    pred_mx_r1 = '[[[Q]]]',
+    pred_vect_r1 =  '[([Q],[Q])]',
+    unsrt_vtx_r1 = '[[Q]]',
+    heap_lazy = '[Q]',
+    init_r1 = '[[Q]]'
 )
 
 DESCRIPTORS = {

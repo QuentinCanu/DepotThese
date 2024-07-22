@@ -9,6 +9,7 @@ import re
 import time
 import math
 from scripts import genlrs, lrs2common, common2certif, dict2bin, bin2coq, dict2text, coqjobs, certif2hirsch
+from scripts.rank1 import lrs2dict_r1, lrs2dict_r1_pivot, lrs2dict_r1_matrix, lrs2dict_r1_vector, lrs2dict_r1_lazy
 import csv
 import shutil
 import json
@@ -20,20 +21,42 @@ POLYTOPES = ["cube", "cross", "cyclic", "permutohedron"]
 DATA_DIR = os.path.join(CWD,"data")
 JOB_DIR = os.path.join(CWD,"jobs")
 NO_BENCH = "------"
+COMMON = "common"
+GRAPH_CERTIF = "graph_certif"
+HIRSCH = "hirsch"
+DIAMETER = "diameter"
+IMPROVED = "improved"
+RANK1 = "rank1"
+PIVOT = "pivot"
+R1_MATRIX = "r1_matrix"
+R1_VECTOR = "r1_vector"
+LAZY = "lazy"
+
 GENERATORS = {
-    "common" : lrs2common.lrs2common,
-    "graph_certif" : common2certif.common2certif,
-    "hirsch" : certif2hirsch.certif2hirsch,
-    "diameter" : (lambda name,certif : {"g_vtx" : certif["g_vtx"]}),
-    "improved" : (lambda name, certif : 
+    COMMON : lrs2common.lrs2common,
+    GRAPH_CERTIF : common2certif.common2certif,
+    HIRSCH : certif2hirsch.certif2hirsch,
+    DIAMETER : (lambda name,certif : {"g_vtx" : certif["g_vtx"]}),
+    IMPROVED : (lambda name, certif : 
       {i : certif[i] for i in 
-       ["A","b","g_lex","vertices","bases","inverses"]})
+       ["A","b","g_lex","vertices","bases","inverses"]}),
+    RANK1 : lrs2dict_r1.lrs2dict,
+    PIVOT : lrs2dict_r1_pivot.lrs2dict,
+    R1_MATRIX : lrs2dict_r1_matrix.lrs2dict,
+    R1_VECTOR : lrs2dict_r1_vector.lrs2dict,
+    LAZY : lrs2dict_r1_lazy.lrs2dict
     }
+
 PREREQUISITES = {
-  "graph_certif" : "PolyhedraHirschVerif",
-  "diameter" : "PolyhedraHirsch",
-  "improved" : "PolyhedraHirschImprVerif",
-  "hirsch" : "PolyhedraHirsch"
+  GRAPH_CERTIF : "PolyhedraHirschVerif",
+  DIAMETER : "PolyhedraHirsch",
+  IMPROVED : "PolyhedraHirschImprVerif",
+  HIRSCH : "PolyhedraHirsch",
+  RANK1 : "PolyhedraHirschRank1",
+  PIVOT : "PolyhedraHirschRank1",
+  R1_MATRIX : "PolyhedraHirschRank1",
+  R1_VECTOR : "PolyhedraHirschRank1",
+  LAZY : "PolyhedraHirschRank1",
 }
 
 
@@ -215,27 +238,57 @@ def make_benchmarks(name,taskdict):
 # --------------------------------------------------------------------
 TASKS = {
   "lrs" : compute_lrs,
-  "graph_certif_generation" : generation("graph_certif", "common","graph_certif"),
-  "graph_certif_conversion" : conversion("graph_certif"),
-  "graph_certif_conversion_text" : conversion("graph_certif", text=True),
-  "graph_certif_execution" : execution("graph_certif"),
-  "graph_certif_execution_compute" : execution("graph_certif",compute=True),
-  "diameter_generation" : generation("diameter", "graph_certif", "diameter"),
-  "diameter_conversion" : conversion("diameter"),
-  "diameter_execution" : execution("diameter"),
-  "improved_generation" : generation("improved", "common", "improved"),
-  "improved_conversion" : conversion("improved"),
-  "improved_execution" : execution("improved")
+  "graph_certif_generation" : generation(GRAPH_CERTIF, COMMON,GRAPH_CERTIF),
+  "graph_certif_conversion" : conversion(GRAPH_CERTIF),
+  "graph_certif_conversion_text" : conversion(GRAPH_CERTIF, text=True),
+  "graph_certif_execution" : execution(GRAPH_CERTIF),
+  "graph_certif_execution_compute" : execution(GRAPH_CERTIF,compute=True),
+  "diameter_generation" : generation(DIAMETER, GRAPH_CERTIF, DIAMETER),
+  "diameter_conversion" : conversion(DIAMETER),
+  "diameter_execution" : execution(DIAMETER),
+  "improved_generation" : generation(IMPROVED, COMMON, IMPROVED),
+  "improved_conversion" : conversion(IMPROVED),
+  "improved_execution" : execution(IMPROVED),
+  "rank1_generation" : generation(RANK1,RANK1),
+  "rank1_conversion" : conversion(RANK1),
+  "rank1_execution" : execution(RANK1),
+  "pivot_generation" : generation(PIVOT,PIVOT),
+  "pivot_conversion" : conversion(PIVOT),
+  "pivot_execution" : execution(PIVOT),
+  "r1_matrix_generation" : generation(R1_MATRIX,R1_MATRIX),
+  "r1_matrix_conversion" : conversion(R1_MATRIX),
+  "r1_matrix_execution" : execution(R1_MATRIX),
+  "r1_vector_generation" : generation(R1_VECTOR, R1_VECTOR),
+  "r1_vector_conversion" : conversion(R1_VECTOR),
+  "r1_vector_execution" : execution(R1_VECTOR),
+  "lazy_generation" : generation(LAZY, LAZY),
+  "lazy_conversion" : conversion(LAZY),
+  "lazy_execution" : execution(LAZY),
 }
 
 HIRSCH_TASKS = {
     "lrs" : compute_lrs,
-    "hirsch_generation" : generation("hirsch","common", "graph_certif", "hirsch"), 
-    "hirsch_conversion" : conversion("hirsch"),
-    "hirsch_execution" : execution("hirsch"),
-    "improved_generation" : generation("improved", "common", "improved"),
-    "improved_conversion" : conversion("improved"),
-    "improved_execution" : execution("improved")
+    "hirsch_generation" : generation(HIRSCH,COMMON, GRAPH_CERTIF, HIRSCH), 
+    "hirsch_conversion" : conversion(HIRSCH),
+    "hirsch_execution" : execution(HIRSCH),
+    "improved_generation" : generation(IMPROVED, COMMON, IMPROVED),
+    "improved_conversion" : conversion(IMPROVED),
+    "improved_execution" : execution(IMPROVED),
+    "rank1_generation" : generation(RANK1,RANK1),
+    "rank1_conversion" : conversion(RANK1),
+    "rank1_execution" : execution(RANK1),
+    "pivot_generation" : generation(PIVOT,PIVOT),
+    "pivot_conversion" : conversion(PIVOT),
+    "pivot_execution" : execution(PIVOT),
+    "r1_matrix_generation" : generation(R1_MATRIX,R1_MATRIX),
+    "r1_matrix_conversion" : conversion(R1_MATRIX),
+    "r1_matrix_execution" : execution(R1_MATRIX),
+    "r1_vector_generation" : generation(R1_VECTOR, R1_VECTOR),
+    "r1_vector_conversion" : conversion(R1_VECTOR),
+    "r1_vector_execution" : execution(R1_VECTOR),
+    "lazy_generation" : generation(LAZY, LAZY),
+    "lazy_conversion" : conversion(LAZY),
+    "lazy_execution" : execution(LAZY),
   }
 
 def create(args):
@@ -290,7 +343,7 @@ def main():
   clean_parser = subparsers.add_parser("clean")
   clean_parser.set_defaults(func=clean)
 
-  hirsch_parser = subparsers.add_parser("hirsch")
+  hirsch_parser = subparsers.add_parser(HIRSCH)
   hirsch_parser.add_argument("which", choices=HIRSCH_CEX)
   hirsch_parser.set_defaults(func=hirsch)
 
@@ -384,10 +437,10 @@ if __name__ == "__main__":
 #     coqjobs.main(name,"Validation",compute)
 #     coqjobs.main(name,"Validation_Compute",compute)
 #     if name in ["poly20dim21", "poly23dim24"]:
-#       coqjobs.main(name,"Hirsch", compute)
+#       coqjobs.main(name,HIRSCH, compute)
 #       coqjobs.main(name,"Exact", compute)
 #     else:
-#       coqjobs.main(name,"Diameter", compute)
+#       coqjobs.main(name,DIAMETER, compute)
 #     res[-1] = {**res[-1], **res2}
 #   return res
 
@@ -538,8 +591,8 @@ if __name__ == "__main__":
 #     "certificates" : certificates,
 #     "compilation" : compilation,
 #     "validation" : job("Validation"),
-#     "diameter" : job("Diameter"),
-#     "hirsch" : job("Hirsch"),
+#     DIAMETER : job(DIAMETER),
+#     HIRSCH : job(HIRSCH),
 #     "exact" : job("Exact")
 #   }
 

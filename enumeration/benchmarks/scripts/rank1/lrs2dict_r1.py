@@ -5,11 +5,13 @@ import fractions as fc
 import argparse as argp
 import math, fractions, random as rd
 from .. import farkas as fk
-from .. import core
 
 import sympy as sym
 from sympy.polys.domains  import QQ
 from sympy.polys.matrices import DomainMatrix
+
+CWD = os.getcwd()
+DATA_DIR = os.path.join(CWD,"data")
 
 # Common functions
 # -------------------------------------------------------------------
@@ -19,7 +21,7 @@ def bigq(x):
 # Extract polyhedron information from lrs files
 # -------------------------------------------------------------------
 def get_polyhedron_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ine")
+    input = os.path.join(DATA_DIR,name,"lrs",f"{name}.ine")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
@@ -31,7 +33,7 @@ def get_polyhedron_from_lrs(name):
     return A, b
 
 def get_bases_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ext")
+    input = os.path.join(DATA_DIR,name,"lrs",f"{name}.ext")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
@@ -62,16 +64,16 @@ def list_of_gmp_matrix(PM):
 # Compute the initial basing point from which we compute our vertex certification
 # -------------------------------------------------------------------
 
-def get_idx(bases, bas2det):
-    min = math.inf
-    idx = 0
-    # for i in range(len(bases)):
-    #     bas = bases[i]
-    #     det = fc.Fraction(bas2det[frozenset(bas)])
-    #     if det < min:
-    #         min = det
-    #         idx = i
-    return idx
+# def get_idx(bases, bas2det):
+#     min = math.inf
+#     idx = 0
+#     # for i in range(len(bases)):
+#     #     bas = bases[i]
+#     #     det = fc.Fraction(bas2det[frozenset(bas)])
+#     #     if det < min:
+#     #         min = det
+#     #         idx = i
+#     return idx
 
 def get_initial_basing_point(A,b,base):
     A_I = [A[i] for i in base]
@@ -126,66 +128,6 @@ def get_unsrt_vtx(bases,bas2vtx):
         vtx_list[i] = vtx
     return vtx_list
 
-def get_vtx(bas2vtx):
-    vtx_list = [i for i in bas2vtx.values()]
-    vtx_list = sorted(set([tuple(map((lambda x : fractions.Fraction(x)), l)) for l in vtx_list]))
-    return [list(map(str,elt)) for elt in vtx_list]
-        
-def get_morph(bases, vtx, bas2vtx):
-    morph, morph_inv = [None for _ in bases], [None for _ in vtx]
-    aux = {tuple(vtx[i]) : i for i in range(len(vtx))}
-    for i in range(len(bases)):
-        bas = bases[i]
-        v = bas2vtx[frozenset(bas)]
-        j = aux[tuple(v)]
-        morph[i] = j
-        morph_inv[j] = i
-    return morph, morph_inv
-
-def get_graph_vtx(graph_lex, morf, length_vtx):
-    graph = [[] for i in range(length_vtx)]
-    for i in range(len(graph_lex)):
-        tgt_i = morf[i]
-        for j in graph_lex[i]:
-            tgt_j = morf[j]
-            if tgt_i != tgt_j and tgt_j not in graph[tgt_i]:
-                graph[tgt_i].append(tgt_j)
-    return [sorted(x) for x in graph]
-
-def get_edge_inv(G_lex, G_simpl, morf):
-    edge_inv = [[None for j in range(len(G_simpl[i]))] for i in range(len(G_simpl))]
-    for i in range(len(G_lex)):
-        for j in range(len(G_lex[i])):
-            nei = G_lex[i][j]
-            if morf[i] != morf[nei]:
-                j_ = next(i for i,v in enumerate(G_simpl[morf[i]]) if v == morf[nei])
-                edge_inv[morf[i]][j_] = (i,nei)
-    return edge_inv
-    
-# Get final certificates (Farkas, dim_full)
-# -------------------------------------------------------------------
-def get_farkas_cert(A, m, n):
-    A = to_gmp_matrix(A).transpose()
-    cert_pos, cert_neg = [], []
-    for k in range(n):
-        cert_pos.append(list(map(bigq,fk.farkas_gen(A, n, m, k))))
-        cert_neg.append(list(map(bigq,fk.farkas_gen(-A, n, m, k))))
-    return cert_pos, cert_neg
-
-def get_dim_full(vtx, n):
-    while True:
-        map_lbl = rd.sample(range(len(vtx)), n+1)
-        map_lbl.sort()
-        M = sym.Matrix([list(map(fc.Fraction, vtx[i])) for i in list(map_lbl)[1:]])
-        N = sym.Matrix([list(map(fc.Fraction, vtx[map_lbl[0]])) for _ in range(n)])
-        Q = M - N
-        Q_gmp = to_gmp_matrix(Q)
-        Q_det = Q_gmp.det()
-        if Q_det != 0:
-            Q_inv = Q.gmp_inv()
-            Q_res = list_of_gmp_matrix(Q_inv)
-            return list(map_lbl)[0], list(map_lbl)[:1], Q_res
-
 
 # Main function, write a json file with one certificate per entry
 # -------------------------------------------------------------------
@@ -195,20 +137,16 @@ def optparser():
     return parser
 
 # -------------------------------------------------------------------
-def lrs2dict(name,hirsch=False):
+def lrs2dict(name):
 
     # Compute everything
     A,b = get_polyhedron_from_lrs(name)
     bases, bas2vtx, bas2det = get_bases_from_lrs(name)
-    idx = get_idx(bases, bas2det)
+    idx = 0
     x_I, inv = (get_initial_basing_point(A,b,bases[idx]))
     m,n = len(A), len(A[0])
     graph_lex, order, pred = get_lex_graph(bases,idx,m,n)
-    vtx = get_unsrt_vtx(bases, bas2vtx)
-    # morph, morph_inv = get_morph(bases,vtx,bas2vtx)
-    # graph_vtx = get_graph_vtx(graph_lex,morph,len(vtx))
-    # edge_inv = get_edge_inv(graph_lex,graph_vtx,morph)
-    # farkas_cert_pos, farkas_cert_neg = get_farkas_cert(A,m,n)
+    # unsrt_vtx = get_unsrt_vtx(bases, bas2vtx)
 
 
     # Store in a dictionnary
@@ -217,27 +155,11 @@ def lrs2dict(name,hirsch=False):
     tgtjson['A'] = A
     tgtjson['b'] = b
     tgtjson['bases'] = bases
-    tgtjson['idx'] = idx
-    tgtjson['x_I'] = x_I
-    tgtjson['inv'] = inv
+    tgtjson['idx_r1'] = idx
+    tgtjson['x_I_r1'] = x_I
+    tgtjson['inv_r1'] = inv
     # tgtjson['det'] = det
-    tgtjson['order'] = order
-    tgtjson['steps'] = len(order)
-    tgtjson['pred'] = pred
-    tgtjson['vtx'] = vtx
+    tgtjson['order_r1'] = order
+    tgtjson['pred_r1'] = pred
+    # tgtjson['unsrt_vtx'] = unsrt_vtx
     return tgtjson
-
-def dict2json(name,tgtdict):
-    tgtdir = core.resource(name)
-    
-    with open(os.path.join(tgtdir, f"{name}.json"), "w") as stream:
-        json.dump(tgtdict,stream, indent=2)
-
-def main(name):
-    dict2json(name,lrs2dict(name))
-
-# -------------------------------------------------------------------
-if __name__ == '__main__':
-    args   = optparser().parse_args()
-    name   = args.name
-    main(name)

@@ -5,12 +5,13 @@ import fractions as fc
 import argparse as argp
 import math, fractions, random as rd
 from .. import farkas as fk
-from .. import core
 
 import sympy as sym
 from sympy.polys.domains  import QQ
 from sympy.polys.matrices import DomainMatrix
 
+CWD = os.getcwd()
+DATA_DIR = os.path.join(CWD, "data")
 # Common functions
 # -------------------------------------------------------------------
 def bigq(x):
@@ -19,7 +20,7 @@ def bigq(x):
 # Extract polyhedron information from lrs files
 # -------------------------------------------------------------------
 def get_polyhedron_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ine")
+    input = os.path.join(DATA_DIR,name,"lrs",f"{name}.ine")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
@@ -31,7 +32,7 @@ def get_polyhedron_from_lrs(name):
     return A, b
 
 def get_bases_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ext")
+    input = os.path.join(DATA_DIR,name,"lrs",f"{name}.ext")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
@@ -82,16 +83,16 @@ def poly_scale(A,b):
 # Compute the initial basing point from which we compute our vertex certification
 # -------------------------------------------------------------------
 
-def get_idx(bases, bas2det):
-    min = math.inf
-    idx = 0
-    for i in range(len(bases)):
-        bas = bases[i]
-        det = fc.Fraction(bas2det[frozenset(bas)])
-        if det < min:
-            min = det
-            idx = i
-    return idx
+# def get_idx(bases, bas2det):
+#     min = math.inf
+#     idx = 0
+#     for i in range(len(bases)):
+#         bas = bases[i]
+#         det = fc.Fraction(bas2det[frozenset(bas)])
+#         if det < min:
+#             min = det
+#             idx = i
+#     return idx
 
 def get_initial_basing_point(A,b,base):
     A_I = [A[i] for i in base]
@@ -215,13 +216,13 @@ def optparser():
     return parser
 
 # -------------------------------------------------------------------
-def lrs2dict(name,hirsch=False):
+def lrs2dict(name):
 
     # Compute everything
     A,b = get_polyhedron_from_lrs(name)
     A,b = poly_scale(A,b)
     bases, bas2vtx, bas2det = get_bases_from_lrs(name)
-    idx = get_idx(bases, bas2det)
+    idx = 0
     x_I, inv, det = (get_initial_basing_point(A,b,bases[idx]))
     m,n = len(A), len(A[0])
     graph_lex, order, pred = get_lex_graph(bases,idx,m,n)
@@ -238,27 +239,11 @@ def lrs2dict(name,hirsch=False):
     tgtjson['A'] = A
     tgtjson['b'] = b
     tgtjson['bases'] = bases
-    tgtjson['idx'] = idx
-    tgtjson['x_I'] = x_I
-    tgtjson['inv'] = inv
-    tgtjson['det'] = det
-    tgtjson['order'] = order
-    tgtjson['steps'] = len(order)
-    tgtjson['pred'] = pred
-    tgtjson['vtx'] = vtx
+    tgtjson['idx_r1'] = idx
+    tgtjson['x_I_r1'] = x_I
+    tgtjson['inv_r1'] = inv
+    tgtjson['det_r1'] = det
+    tgtjson['order_r1'] = order
+    tgtjson['pred_r1'] = pred
     return tgtjson
 
-def dict2json(name,tgtdict):
-    tgtdir = core.resource(name)
-    
-    with open(os.path.join(tgtdir, f"{name}.json"), "w") as stream:
-        json.dump(tgtdict,stream, indent=2)
-
-def main(name):
-    dict2json(name,lrs2dict(name))
-
-# -------------------------------------------------------------------
-if __name__ == '__main__':
-    args   = optparser().parse_args()
-    name   = args.name
-    main(name)

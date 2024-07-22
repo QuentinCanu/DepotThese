@@ -5,12 +5,13 @@ import fractions as fc
 import argparse as argp
 import math, fractions, random as rd
 from .. import farkas as fk
-from .. import core
 
 import sympy as sym
 from sympy.polys.domains  import QQ
 from sympy.polys.matrices import DomainMatrix
 
+CWD = os.getcwd()
+DATA_DIR = os.path.join(CWD, "data")
 # Common functions
 # -------------------------------------------------------------------
 def bigq(x):
@@ -23,7 +24,7 @@ def QQ_red(x):
 # Extract polyhedron information from lrs files
 # -------------------------------------------------------------------
 def get_polyhedron_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ine")
+    input = os.path.join(DATA_DIR,name,"lrs",f"{name}.ine")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
@@ -35,7 +36,7 @@ def get_polyhedron_from_lrs(name):
     return A, b
 
 def get_bases_from_lrs(name):
-    input = core.resource(name,"lrs",f"{name}.ext")
+    input = os.path.join(DATA_DIR,name,"lrs",f"{name}.ext")
     with open(input, 'r') as stream:
         mx = [x.strip() for x in stream]
         mx = [x.split() for x in mx[mx.index('begin')+2:mx.index('end')]]
@@ -85,8 +86,8 @@ def poly_scale(A,b):
 
 # Construct the graph of lex feasible bases + order of construction
 # -------------------------------------------------------------------
-def get_idx():
-    return 0
+# def get_idx():
+#     return 0
 
 def get_initial_basing_point(A, bases, idx):
     base = bases[idx]
@@ -232,22 +233,16 @@ def optparser():
     return parser
 
 # -------------------------------------------------------------------
-def lrs2dict(name,hirsch=""):
+def lrs2dict(name):
 
     # Compute everything
     A,b = get_polyhedron_from_lrs(name)
     A,b = poly_scale(A,b)
     bases, bas2vtx, bas2det = get_bases_from_lrs(name)
-    idx = get_idx()
-    # init = get_initial_basing_point(A, bases, idx)
+    idx = 0
     inv = get_initial_basing_point(A,bases,idx)
-    # m,n = len(A), len(A[0])
     idx, graph_lex, order, pred, pred_vect = get_lex_graph(A,bases,idx,inv)
     vtx = get_unsrt_vtx(bases, bas2vtx)
-    # morph, morph_inv = get_morph(bases,vtx,bas2vtx)
-    # graph_vtx = get_graph_vtx(graph_lex,morph,len(vtx))
-    # edge_inv = get_edge_inv(graph_lex,graph_vtx,morph)
-    # farkas_cert_pos, farkas_cert_neg = get_farkas_cert(A,m,n)
 
 
     # Store in a dictionnary
@@ -256,26 +251,10 @@ def lrs2dict(name,hirsch=""):
     tgtjson['A'] = A
     tgtjson['b'] = b
     tgtjson['bases'] = bases
-    tgtjson['idx'] = idx
-    tgtjson['inv'] = list_of_gmp_matrix(inv)
-    tgtjson['order'] = order
-    tgtjson['steps'] = len(order)
-    tgtjson['pred'] = pred
-    tgtjson['pred_vect'] = pred_vect
-    tgtjson['vtx'] = vtx
+    tgtjson['idx_r1'] = idx
+    tgtjson['inv_r1'] = list_of_gmp_matrix(inv)
+    tgtjson['order_r1'] = order
+    tgtjson['pred_r1'] = pred
+    tgtjson['pred_vect_r1'] = pred_vect
+    tgtjson['unsrt_vtx_r1'] = vtx
     return tgtjson
-    
-def dict2json(name,tgtdict):
-    tgtdir = core.resource(name)
-    
-    with open(os.path.join(tgtdir, f"{name}.json"), "w") as stream:
-        json.dump(tgtdict,stream, indent=2)
-
-def main(name):
-    dict2json(name,lrs2dict(name))
-
-# -------------------------------------------------------------------
-if __name__ == '__main__':
-    args   = optparser().parse_args()
-    name   = args.name
-    main(name)

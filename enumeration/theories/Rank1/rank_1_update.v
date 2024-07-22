@@ -97,7 +97,7 @@ Definition explore
   (certif_bases : array (array int63))
   (certif_pred : array (int63 * (int63 * int63)))
   (main : array (option ((array (array bigQ)))))
-  (order : array int63) (steps : int63):=
+  (order : array int63):=
   IFold.ifold
     (fun i main=>
       let (idx,rs) := certif_pred.[order.[i]] in
@@ -113,7 +113,7 @@ Definition explore
               main.[order.[i] <- Some M'] 
             else main
           else main) 
-    steps main.
+    (length order) main.
 
 Definition initial
   (A : array (array bigQ)) (b : array bigQ)
@@ -144,17 +144,17 @@ Definition initial_main
 *)
 
 Definition explore_from_initial
-  A b certif_bases certif_pred idx x inv order steps:=
-  explore b certif_bases certif_pred (initial_main A b certif_bases idx x inv) order steps.
+  A b certif_bases certif_pred idx x inv order:=
+  explore b certif_bases certif_pred (initial_main A b certif_bases idx x inv) order.
 
 Definition vertex_certif
   (A : array (array bigQ)) (b : array bigQ)
   (certif_bases : array (array int63))
   (certif_pred : array (int63 * (int63 * int63)))
   (idx : int63) (x : array bigQ) (inv : array (array bigQ))
-  (order : array int63) steps:=
-  let main := explore_from_initial A b certif_bases certif_pred idx x inv order steps in
-  IFold.ifold (fun i res => res && isSome main.[order.[i]]) steps true.
+  (order : array int63):=
+  let main := explore_from_initial A b certif_bases certif_pred idx x inv order in
+  PArrayUtils.all (fun x => isSome x) main.
 
 (* Definition num_profile
   (main : array (option ((array (array bigZ)) * bigZ * seq (bigZ * bigZ * bigZ * bigZ * bigZ)))) (order : array int63) steps :=

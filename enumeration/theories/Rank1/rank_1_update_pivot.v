@@ -159,7 +159,7 @@ Definition explore
   (certif_bases : array (array int63))
   (certif_pred : array (int63 * (int63 * int63)))
   (main : array (option ((array (array bigZ)) * bigZ * seq (bigZ * bigZ * bigZ * bigZ * bigZ))))
-  (order : array int63) (steps : int63):=
+  (order : array int63):=
   let b_int := PArrayUtils.map get_num b in
   IFold.ifold
     (fun i main=>
@@ -173,7 +173,7 @@ Definition explore
         if (Mrs ?= 0)%bigZ is Eq then main else
         let '(M', q', nums') := update b_int I r s M q in
         if sat_lex M' q' b certif_bases.[order.[i]] then main.[order.[i] <- Some (M', q', nums')] else main
-        else main) steps main.
+        else main) (length order) main.
 
 Definition initial
   (A : array (array bigQ)) (b : array bigQ)
@@ -207,19 +207,19 @@ Definition initial_main
 *)
 
 Definition explore_from_initial
-  A b certif_bases certif_pred idx x inv q order steps:=
-  explore b certif_bases certif_pred (initial_main A b certif_bases idx x inv q) order steps.
+  A b certif_bases certif_pred idx x inv q order:=
+  explore b certif_bases certif_pred (initial_main A b certif_bases idx x inv q) order.
 
 Definition vertex_certif
   (A : array (array bigQ)) (b : array bigQ)
   (certif_bases : array (array int63))
   (certif_pred : array (int63 * (int63 * int63)))
-  (idx : int63) (x : array bigQ) (inv : array (array bigQ)) q
-  (order : array int63) steps:=
-  let main := explore_from_initial A b certif_bases certif_pred idx x inv q order steps in
-  IFold.ifold (fun i res => res && isSome main.[order.[i]]) steps true.
+  (idx : int63) (x : array bigQ) (inv : array (array bigQ)) (q : bigQ)
+  (order : array int63):=
+  let main := explore_from_initial A b certif_bases certif_pred idx x inv (get_num q) order in
+  PArrayUtils.all (fun x=> isSome x) main.
 
-Definition num_profile
+(* Definition num_profile
   (main : array (option ((array (array bigZ)) * bigZ * seq (bigZ * bigZ * bigZ * bigZ * bigZ)))) (order : array int63) steps :=
   IFold.ifold (fun i res =>
                  match main.[order.[i]] with
@@ -229,7 +229,7 @@ Definition num_profile
                               let cd := (c * d)%bigZ in
                               (ab, cd, ab - cd)%bigZ) (0, 0, 0)%bigZ s
                  | None => res
-                 end) steps (0, 0, 0)%bigZ.
+                 end) steps (0, 0, 0)%bigZ. *)
 
 (*
 Definition update
@@ -337,7 +337,7 @@ Module R1 := Rank1Certif.
 
 (* ---------------------------------------------------------------------------- *)
 
-Module CertifPredVerif.
+(* Module CertifPredVerif.
 
 
 
@@ -376,4 +376,4 @@ Definition certif_pred_correct certif_bases certif_pred :=
     let I := certif_bases.[idx] in
     adjacent I J r s) (length certif_bases).
 
-End CertifPredVerif.
+End CertifPredVerif. *)
