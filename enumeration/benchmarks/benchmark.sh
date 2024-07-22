@@ -1,4 +1,4 @@
-./benchmark.py clean
+./benchmark.py clean 
 ./benchmark.py create cube 3
 ./benchmark.py create cube 4
 ./benchmark.py create cube 5
