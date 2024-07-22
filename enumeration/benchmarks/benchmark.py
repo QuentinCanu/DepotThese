@@ -329,7 +329,7 @@ def hirsch(args):
 # --------------------------------------------------------------------
 def to_csv(json_paths, tgtfile):
   if len(json_paths) == 0:
-    print("there is no benchmark to work with")
+    print(f"There is no benchmark to make {tgtfile}")
     return None
   benchmarks = []
   for (name,path) in json_paths:
@@ -355,11 +355,11 @@ def csv_gen(_):
     json_path = os.path.join(DATA_DIR,name,f"benchmarks_{name}.json")
     if os.path.exists(json_path):
       if name in HIRSCH_CEX:
-        hirsch_paths.append(name,json_path)
+        hirsch_paths.append((name,json_path))
       else:
-        other_paths.append(name,json_path)
+        other_paths.append((name,json_path))
   to_csv(hirsch_paths, HIRSCH + ".csv")
-  to_csv(other_paths, "benchmarks.csv")
+  to_csv(other_paths, "benchmark.csv")
 
 
 # --------------------------------------------------------------------
