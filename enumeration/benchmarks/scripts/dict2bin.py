@@ -2,7 +2,6 @@
 
 # --------------------------------------------------------------------
 import sys, os, json
-import tqdm
 import struct
 import gc
 
@@ -62,7 +61,7 @@ def json2dict(name):
 
 def dict2bin(tgtdir,contents):
     res = {}
-    for key in tqdm.tqdm(contents.keys(), desc="Serializing certificates : "):
+    for key in contents.keys():
         if key not in DESCRIPTORS:
             print(f'Ignoring {key}', file = sys.stderr)
             continue

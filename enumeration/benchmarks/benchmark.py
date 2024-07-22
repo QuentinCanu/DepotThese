@@ -148,12 +148,12 @@ def job(jobdir, *relpath):
       rel_path = os.path.join(*relpath, file+"o")
       st = command_call("time dune build " + rel_path, TIME_MEM_PREFIX)
       time, memory = format_time_output(st)
-      res[file + " time"] = time
-      res[file + " memory"] = memory
+      res[file + " execution time"] = time
+      res[file + " execution memory"] = memory
       times.append(float(time if time is not None else 0.0))
       max_memory = max(max_memory,float(memory if memory is not None else 0.0))
-  res["total time"] = str(math.fsum(times))
-  res["max memory"] = str(max_memory)
+  res["total execution time"] = str(math.fsum(times))
+  res["max execution memory"] = str(max_memory)
   return res
 
 def certif_compilation(tgtdir, *relpath):
@@ -167,12 +167,12 @@ def certif_compilation(tgtdir, *relpath):
       rel_path = os.path.join(*relpath,file+"o")
       st = command_call("time dune build " + rel_path,TIME_MEM_PREFIX)
       time, memory = format_time_output(st)
-      res[file + " time"] = time
+      res[file + " compilation time"] = time
       res[file + " memory"] = memory
       times.append(float(time if time is not None else 0.0))
       max_memory = max(max_memory,float(memory if memory is not None else 0.0))
-  res["total time"] = str(math.fsum(times))
-  res["max memory"] = str(max_memory)
+  res["total compilation time"] = str(math.fsum(times))
+  res["max compilation memory"] = str(max_memory)
   return res
 # --------------------------------------------------------------------
 def conversion(certif_type, text=False):
@@ -189,33 +189,54 @@ def conversion(certif_type, text=False):
       st = time.time()
       bench = dict2text.dict2text(dune_name_certif(name, certif_type, True), textdir, certif)
       et = time.time()
-      res["conversion into plain text certificates"] = {"time" : et - st, "size of files" : bench}
-      res["compilation of text certificates"] = certif_compilation(textdir, *textpath)
+      res["time of serialization"] = et - st 
+      res.update(bench)
+      res.update(certif_compilation(textdir, *textpath))
     else:
       binpath = ["data", name, certif_type, "bin_certif"]
       bindir = os.path.join(CWD, *binpath)
       os.makedirs(bindir, exist_ok = True)
       st = time.time()
       bench = dict2bin.dict2bin(bindir,certif)
-      et = time.time()
-      res["conversion into bin certificates"] = {"time" : et - st, "size of bin files" : bench}
       bin2coq.bin2coq(dune_name_certif(name, certif_type), bindir)
-      res["compilation of bin certificates"] = certif_compilation(bindir, *binpath)
+      et = time.time()
+      res["time of serialization"] = et - st
+      res.update(bench)
+      res.update(certif_compilation(bindir, *binpath))
     return res
   return worker
 
 # --------------------------------------------------------------------
 def execution(algo,compute=False):
   def worker(name):
-    res = {}
     tgtpath = ["data", name, algo, "compute" if compute else "vm_compute"]
     tgtdir = os.path.join(CWD, *tgtpath)
     os.makedirs(tgtdir,exist_ok = True)
     jobdir = os.path.join(JOB_DIR, algo)
     coqjobs.coqjob(name, dune_name_algo(name, algo,compute), dune_name_certif(name, algo), PREREQUISITES[algo], jobdir, tgtdir, compute)
-    res[f"Execution of {algo}" + (", with compute" if compute else "")] = job(tgtdir,*tgtpath)
-    return res
+    return job(tgtdir,*tgtpath)
   return worker
+
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
+def clean(args):
+  for dir in os.listdir(DATA_DIR):
+    dir_path = os.path.join(DATA_DIR, dir)
+    if os.path.isdir(dir_path):
+      if dir not in HIRSCH_CEX:
+        shutil.rmtree(dir_path)
+      else:
+        for subdir in os.listdir(dir_path):
+          if os.path.isdir(os.path.join(dir_path,subdir)) and subdir != "lrs":
+            shutil.rmtree(os.path.join(dir_path,subdir))
+          elif subdir.endswith(".json"):
+            os.remove(os.path.join(dir_path,subdir))
+          else:
+            path_ext = os.path.join(dir_path,subdir,dir+".ext")
+            if os.path.exists(path_ext):
+              os.remove(path_ext)
+  command_call("dune clean")
+  command_call("dune build " + os.path.join("..", "theories"))
 
 # --------------------------------------------------------------------
 def make_benchmarks(name,taskdict):
@@ -226,7 +247,7 @@ def make_benchmarks(name,taskdict):
   else:
     benchmarks = dict(zip(taskdict,it.repeat(None)))
   for task in taskdict.keys():
-    print(task)
+    print(f"Performing {task}")
     if benchmarks.get(task, None) is None:
       res = taskdict[task](name)
       benchmarks[task] = res
@@ -301,37 +322,44 @@ def create(args):
   gen_lrs(polytope,dim)
   make_benchmarks(name,TASKS)
 
-
-# --------------------------------------------------------------------
-def clean(args):
-  for dir in os.listdir(DATA_DIR):
-    dir_path = os.path.join(DATA_DIR, dir)
-    if os.path.isdir(dir_path):
-      if dir not in HIRSCH_CEX:
-        shutil.rmtree(dir_path)
-      else:
-        for subdir in os.listdir(dir_path):
-          if os.path.isdir(os.path.join(dir_path,subdir)) and subdir != "lrs":
-            shutil.rmtree(os.path.join(dir_path,subdir))
-          elif subdir.endswith(".json"):
-            os.remove(os.path.join(dir_path,subdir))
-          else:
-            path_ext = os.path.join(dir_path,subdir,dir+".ext")
-            if os.path.exists(path_ext):
-              os.remove(path_ext)
-  command_call("dune clean")
-  command_call("dune build " + os.path.join("..", "theories"))
-
-# --------------------------------------------------------------------
 def hirsch(args):
   name = args.which
   make_benchmarks(name,HIRSCH_TASKS)
+
+# --------------------------------------------------------------------
+def csv_gen(_):
+  benchmarks = {}
+  example = None
+  for dir in os.listdir(DATA_DIR):
+    if dir not in HIRSCH_CEX:
+      json_path = os.path.join(DATA_DIR,dir,f"benchmarks_{dir}.json")
+      if os.path.exists(json_path):
+        example = dir if example is None else example
+        with open(json_path) as stream:
+          bench = json.load(stream)
+          res = {}
+          for fst,vals in bench.items():
+            for snd,val in vals.items():
+              res[" : ".join([fst,snd])] = val
+          benchmarks[dir] = res
+  if example is None:
+    print("There is no benchmarks to work with")
+  fieldnames = ["polytope"] + list(benchmarks[example].keys())
+  with open("benchmarks.csv", "w") as csv_stream:
+    writer = csv.DictWriter(csv_stream, fieldnames=fieldnames)
+
+    writer.writeheader()
+    for name in benchmarks.keys():
+      writer.writerow(dict(polytope = name, **benchmarks[name]))
 
 # --------------------------------------------------------------------
 def main():
   parser = argp.ArgumentParser()
   subparsers = parser.add_subparsers()
   
+  clean_parser = subparsers.add_parser("clean")
+  clean_parser.set_defaults(func=clean)
+
   create_parser = subparsers.add_parser("create")
   create_parser.add_argument("polytope", choices=POLYTOPES)
   create_parser.add_argument("dim", type=int, nargs=1)
@@ -339,12 +367,14 @@ def main():
   create_parser.add_argument("--compute", action="store_true")
   create_parser.set_defaults(func=create)
 
-  clean_parser = subparsers.add_parser("clean")
-  clean_parser.set_defaults(func=clean)
-
   hirsch_parser = subparsers.add_parser(HIRSCH)
   hirsch_parser.add_argument("which", choices=HIRSCH_CEX)
   hirsch_parser.set_defaults(func=hirsch)
+
+  csv_parser = subparsers.add_parser("csv")
+  csv_parser.set_defaults(func=csv_gen)
+
+
 
   args = parser.parse_args()
   args.func(args)

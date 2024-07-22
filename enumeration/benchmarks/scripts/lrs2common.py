@@ -5,7 +5,6 @@ import fractions as fc
 import argparse as argp
 import math, fractions, random as rd
 import networkx as nx
-import tqdm
 import random as rd
 from . import farkas as fk
 
@@ -63,7 +62,7 @@ def get_lex_graph(m,n,bases):
     graph = [set() for _ in bases]
     bases_dic = {frozenset(elt) : i for i,elt in enumerate(bases)}
     reg = [0 for _ in bases]
-    for kI,I in enumerate(tqdm.tqdm(bases,desc="Computing the graph of the lex-feasible bases : ")):
+    for kI,I in enumerate(bases):
         I_set = set(I)
         s = 0
         while reg[kI] < n:
@@ -117,7 +116,7 @@ def get_inverses(A,bases,graph,root=0):
     graph_lex = nx.Graph({i:edges for i,edges in enumerate(graph)})
     inverses = [None for _ in bases]
     inverses[root] = get_initial_inverse(A,bases[root])
-    for (node,pred) in tqdm.tqdm(nx.bfs_predecessors(graph_lex,root), desc="Computation of the labels of the lex-feasible bases graph : "):
+    for (node,pred) in nx.bfs_predecessors(graph_lex,root):
         inverses[node] = rank_1_update(A,inverses[pred],bases[pred],bases[node])
     return [[list_of_gmp_matrix(col)[0] for col in inv if col is not None] for inv in inverses]
 
@@ -187,11 +186,8 @@ def lrs2common(name):
     bases, vertices = get_bases_from_lrs(name)
     g_lex = get_lex_graph(len(A), len(A[0]), bases)
     inverses = get_inverses(A,bases,g_lex)
-    print(f"Computation of the certificates of boundedness : ", end="", flush=True)
-    st = time.time()
     bound_pos, bound_neg = get_farkas_cert(A,len(A),len(A[0]))
     et = time.time()
-    print(f"{et - st:.2f}s")
 
     tgtdict =   {
                 "A"         : A,
