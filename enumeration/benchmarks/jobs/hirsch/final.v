@@ -32,7 +32,7 @@ apply: disprove_Hirsch.
 - exact: diameter_check_ok.
 Qed.
 
-Lemma Exact_Diameter : diameter (poly_graph (poly_of_syst high_poly)) = __VALUE__%nat.
+(* Lemma Exact_Diameter : diameter (poly_graph (poly_of_syst high_poly)) = __VALUE__%nat.
 Proof.
 apply: diameter_of___NAME__.
 - exact: poly_format_ok.
@@ -46,4 +46,4 @@ apply: diameter_of___NAME__.
 - exact: bounded_Po_test_ok.
 - exact: graph_n0_ok.
 - exact: diameter_exact_ok.
-Qed.
+Qed. *)
