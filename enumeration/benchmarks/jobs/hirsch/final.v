@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect finmap.
 From Polyhedra Require Import poly_base.
 From PolyhedraHirsch Require Import extra_int extra_simplex high_graph.
 From PolyhedraHirschVerif Require Import low_algo proof_equiv.
-From POLY20DIM21__DATA Require Import A b.
+From __DATA__ Require Import A b.
 Require Import struct_consistent_r vertex_consistent_r img_lex_graph_r format_r.
 Require Import bounded_Po_test_r dim_full_test_r diameter_check_r diameter_exact_r.
 

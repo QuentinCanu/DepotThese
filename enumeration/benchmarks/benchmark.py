@@ -50,7 +50,7 @@ PREREQUISITES = {
   GRAPH_CERTIF : "PolyhedraHirschVerif",
   DIAMETER : "PolyhedraHirsch",
   IMPROVED : "PolyhedraHirschImprVerif",
-  HIRSCH : "PolyhedraHirsch",
+  HIRSCH : "PolyhedraHirschVerif",
   RANK1 : "PolyhedraHirschRank1",
   PIVOT : "PolyhedraHirschRank1",
   R1_MATRIX : "PolyhedraHirschRank1",
@@ -87,7 +87,7 @@ def format_time_output(st):
 
 # --------------------------------------------------------------------
 def polytope_name(polytope,param):
-  return f"{polytope}_{param}_{2*param}" if polytope == "cyclic" else f"{polytope}_{param[0]}"
+  return f"{polytope}_{param}_{2*param}" if polytope == "cyclic" else f"{polytope}_{param}"
 
 def dune_name_certif(name, algo, text = False):
   return "_".join([name.upper(), algo.upper(), "DATA"] + (["TEXT"] if text else []))
@@ -101,7 +101,7 @@ def gen_lrs(polytope, param):
     if polytope == "cyclic":
       genlrs.generate_lrs(polytope, param, 2*param)
     else:
-      genlrs.generate_lrs(polytope, param[0])
+      genlrs.generate_lrs(polytope, param)
 
 # --------------------------------------------------------------------
 def compute_lrs(name):
@@ -312,7 +312,7 @@ HIRSCH_TASKS = {
   }
 
 def create(args):
-  polytope,dim = args.polytope, args.dim
+  polytope,dim = args.polytope, args.dim[0]
   text,compute = args.text,args.compute
   if not text:
     del TASKS["graph_certif_conversion_text"]
