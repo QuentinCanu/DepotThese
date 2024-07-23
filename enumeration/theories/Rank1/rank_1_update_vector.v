@@ -68,10 +68,10 @@ Definition update
     let Ik := I.[k] in
     let M'Ik := make (length M.[Ik]) (default M.[Ik]) in
     let M'Ik := IFold.ifold (fun l c =>
-      c.[l <- (M.[Ik].[l] + v.[k] * Au.[l])%bigQ]) (length M.[Ik]) M'Ik in M'.[Ik <- M'Ik]) 
+      c.[l <- (BigQ.red (M.[Ik].[l] + v.[k] * Au.[l]))%bigQ]) (length M.[Ik]) M'Ik in M'.[Ik <- M'Ik]) 
     (length I) M' in
   let M'r := IFold.ifold (fun l c=>
-    c.[l <- (M.[Is].[l] + v.[s] * Au.[l])%bigQ]
+    c.[l <- (BigQ.red (M.[Is].[l] + v.[s] * Au.[l]))%bigQ]
     ) (length M.[Is]) (make (length M.[Is]) 0%bigQ)
   in
   let M' := M'.[r <- M'r] in M'.
