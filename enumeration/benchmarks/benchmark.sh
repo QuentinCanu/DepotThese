@@ -18,7 +18,6 @@
 ./benchmark.py create cross 5
 ./benchmark.py create cross 6
 ./benchmark.py create cross 7
-./benchmark.py create cross 8
 ./benchmark.py create cyclic 3
 ./benchmark.py create cyclic 4
 ./benchmark.py create cyclic 5
