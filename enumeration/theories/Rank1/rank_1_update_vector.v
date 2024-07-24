@@ -59,7 +59,7 @@ Definition update
   (M : array (array bigQ)) (u v: array bigQ): 
   (array (array bigQ)) :=
   let M' := PArrayUtils.mk_fun (fun _ => make (length M.[0]) 0%bigQ) (length M) (default M) in
-  let Au := BigQUtils.bigQ_mul_mx_col A u in
+  let Au := PArrayUtils.array_mul_mx_col BigQ.add BigQ.mul_norm 0%bigQ A u in
   let Is := I.[s] in
   let Ms := M.[Is] in
   let Mrs := Ms.[r] in
@@ -68,10 +68,10 @@ Definition update
     let Ik := I.[k] in
     let M'Ik := make (length M.[Ik]) (default M.[Ik]) in
     let M'Ik := IFold.ifold (fun l c =>
-      c.[l <- (BigQ.red (M.[Ik].[l] + v.[k] * Au.[l]))%bigQ]) (length M.[Ik]) M'Ik in M'.[Ik <- M'Ik]) 
+      c.[l <- (M.[Ik].[l] + BigQ.red (v.[k] * Au.[l]))%bigQ]) (length M.[Ik]) M'Ik in M'.[Ik <- M'Ik]) 
     (length I) M' in
   let M'r := IFold.ifold (fun l c=>
-    c.[l <- (BigQ.red (M.[Is].[l] + v.[s] * Au.[l]))%bigQ]
+    c.[l <- (M.[Is].[l] + BigQ.red (v.[s] * Au.[l]))%bigQ]
     ) (length M.[Is]) (make (length M.[Is]) 0%bigQ)
   in
   let M' := M'.[r <- M'r] in M'.
