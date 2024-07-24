@@ -12,6 +12,7 @@ from scripts.rank1 import lrs2dict_r1, lrs2dict_r1_pivot, lrs2dict_r1_matrix, lr
 import csv
 import shutil
 import json
+import matplotlib.pyplot as pp
 
 CWD = os.getcwd()
 TIME_MEM_PREFIX = r'TIMEFMT="%E : real time, %M : max memory" && '
@@ -19,6 +20,7 @@ HIRSCH_CEX = ["poly20dim21","poly23dim24"]
 POLYTOPES = ["cube", "cross", "cyclic", "permutohedron"]
 DATA_DIR = os.path.join(CWD,"data")
 JOB_DIR = os.path.join(CWD,"jobs")
+BUILD_DATA_DIR = os.path.join(CWD,'..','..','_build','default','enumeration','benchmarks','data')
 NO_BENCH = "------"
 COMMON = "common"
 GRAPH_CERTIF = "graph_certif"
@@ -65,12 +67,12 @@ PREREQUISITES = {
 #     for i in range(0, len(lst), n):
 #         yield lst[i:i + n]
 
-def command_call(command, prefix=""):
+def command_call(command, timeout=None, prefix=""):
   print(command)
   try:
     output = sp.run(prefix + command,
             shell=True, executable="/bin/zsh", check=True,
-            capture_output=True, text=True)
+            capture_output=True, text=True, timeout=timeout)
     print(output.stdout, output.stderr)
     return output.stderr
   except:
@@ -107,7 +109,7 @@ def gen_lrs(polytope, param):
 def compute_lrs(name):
   inefile = os.path.join(DATA_DIR, name, "lrs", name+".ine")
   extfile = os.path.join(DATA_DIR, name, "lrs", name+".ext")
-  time, memory = format_time_output(command_call(f"time lrs {inefile} {extfile}",TIME_MEM_PREFIX))
+  time, memory = format_time_output(command_call(f"time lrs {inefile} {extfile}",prefix=TIME_MEM_PREFIX))
   return {"time" : time, "memory" : memory}
 
 # --------------------------------------------------------------------
@@ -123,7 +125,7 @@ def generation(tgtname, start, *certificates):
       os.makedirs(startdir, exist_ok=True)
       certif = GENERATORS[start](name)
       with open(startfile, "w") as stream:
-        json.dump(certif, stream)
+        json.dump(certif, stream,indent=0)
     else:
       with open(startfile) as stream:
         certif = json.load(stream)
@@ -131,7 +133,7 @@ def generation(tgtname, start, *certificates):
       certif = GENERATORS[cert](name,certif)
     et = time.time()
     with open(tgtfile,"w") as stream:
-      json.dump(certif,stream)
+      json.dump(certif,stream,indent=0)
     return {"time" : et - st}
   return worker
 
@@ -146,7 +148,7 @@ def job(jobdir, *relpath):
   for file in files:
     if file.endswith(".v"):
       rel_path = os.path.join(*relpath, file+"o")
-      st = command_call("time dune build " + rel_path, TIME_MEM_PREFIX)
+      st = command_call("time dune build " + rel_path, prefix=TIME_MEM_PREFIX)
       time, memory = format_time_output(st)
       res[file + " execution time"] = time
       res[file + " execution memory"] = memory
@@ -165,7 +167,7 @@ def certif_compilation(tgtdir, *relpath):
     if file.endswith(".v"):
       print(f"Compiling {file}")
       rel_path = os.path.join(*relpath,file+"o")
-      st = command_call("time dune build " + rel_path,TIME_MEM_PREFIX)
+      st = command_call("time dune build " + rel_path,prefix=TIME_MEM_PREFIX)
       time, memory = format_time_output(st)
       res[file + " compilation time"] = time
       res[file + " memory"] = memory
@@ -220,23 +222,24 @@ def execution(algo,compute=False):
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 def clean(args):
-  for dir in os.listdir(DATA_DIR):
-    dir_path = os.path.join(DATA_DIR, dir)
-    if os.path.isdir(dir_path):
-      if dir not in HIRSCH_CEX:
-        shutil.rmtree(dir_path)
-      else:
-        for subdir in os.listdir(dir_path):
-          if os.path.isdir(os.path.join(dir_path,subdir)) and subdir != "lrs":
-            shutil.rmtree(os.path.join(dir_path,subdir))
-          elif subdir.endswith(".json"):
-            os.remove(os.path.join(dir_path,subdir))
-          else:
-            path_ext = os.path.join(dir_path,subdir,dir+".ext")
-            if os.path.exists(path_ext):
-              os.remove(path_ext)
-  command_call("dune clean")
-  command_call("dune build " + os.path.join("..", "theories"))
+  dirname = args.dirname
+  taskname = args.taskname
+  if dirname in os.listdir(DATA_DIR):
+    taskdir = os.path.join(DATA_DIR,dirname,taskname)
+    if os.path.isdir(taskdir):
+      shutil.rmtree(taskdir)
+    builddir = os.path.join(BUILD_DATA_DIR,dirname,taskname)
+    if os.path.isdir(builddir):
+      shutil.rmtree(builddir)
+  benchfile = os.path.join(DATA_DIR,dirname,f"benchmarks_{dirname}.json")
+  if os.path.exists(benchfile):
+    with open(benchfile) as stream:
+      bench = json.load(stream)
+      bench[f"{taskname}_conversion"] = None
+      bench[f"{taskname}_execution"] = None
+    with open(benchfile, "w") as stream:
+      json.dump(bench,stream,indent=0)
+
 
 # --------------------------------------------------------------------
 def make_benchmarks(name,taskdict):
@@ -350,16 +353,70 @@ def to_csv(json_paths, tgtfile):
 
 def csv_gen(_):
   hirsch_paths = []
-  other_paths = []
+  cube_paths = []
+  cross_paths = []
+  cyclic_paths = []
+  permutohedron_paths = []
   for name in os.listdir(DATA_DIR):
     json_path = os.path.join(DATA_DIR,name,f"benchmarks_{name}.json")
     if os.path.exists(json_path):
       if name in HIRSCH_CEX:
         hirsch_paths.append((name,json_path))
-      else:
-        other_paths.append((name,json_path))
+      elif name.startswith("cube"):
+        cube_paths.append((name,json_path))
+      elif name.startswith("cross"):
+        cross_paths.append((name,json_path))
+      elif name.startswith("cyclic"):
+        cyclic_paths.append((name,json_path))
+      elif name.startswith("permutohedron"):
+        permutohedron_paths.append((name,json_path))
   to_csv(hirsch_paths, HIRSCH + ".csv")
-  to_csv(other_paths, "benchmark.csv")
+  to_csv(cube_paths, "cube.csv")
+  to_csv(cross_paths, "cross.csv")
+  to_csv(cyclic_paths, "cyclic.csv")
+  to_csv(permutohedron_paths, "permutohedron.csv")
+
+
+# --------------------------------------------------------------------
+def plot(args):
+  name = args.name
+  csvname = f"{name}.csv" 
+  if os.path.exists(csvname):
+    with open(csvname) as stream:
+      reader = csv.DictReader(stream)
+      polytope = []
+      lrs = []
+      graph_certif = []
+      improved = []
+      rank1 = []
+      pivot = []
+      r1_matrix = []
+      r1_vector = []
+      lazy = []
+      for row in reader:
+        polytope.append(row['polytope'])
+        lrs.append(float(row['lrs : time']))
+        graph_certif.append(float(row['graph_certif_execution : vertex_consistent_r.v execution time']))
+        improved.append(float(row['improved_execution : improved.v execution time']))
+        rank1.append(float(row['rank1_execution : rank1.v execution time']))
+        pivot.append(float(row['pivot_execution : pivot.v execution time']))
+        r1_matrix.append(float(row['r1_matrix_execution : r1_matrix.v execution time']))
+        r1_vector.append(float(row['r1_vector_execution : r1_vector.v execution time']))
+        lazy.append(float(row['lazy_execution : lazy.v execution time']))
+      
+
+
+  pp.plot(polytope, lrs, label="lrs")
+  pp.plot(polytope, graph_certif, label="graph_certif") 
+  pp.plot(polytope, improved, label="improved")
+  pp.plot(polytope, rank1, label="rank1")
+  pp.plot(polytope, pivot, label="pivot")
+  pp.plot(polytope, r1_matrix, label="r1_matrix")
+  pp.plot(polytope, r1_vector, label="r1_vector")
+  pp.plot(polytope, lazy, label="lazy")
+  pp.legend()
+  pp.show()
+
 
 
 # --------------------------------------------------------------------
@@ -368,6 +425,8 @@ def main():
   subparsers = parser.add_subparsers()
   
   clean_parser = subparsers.add_parser("clean")
+  clean_parser.add_argument("dirname", choices=os.listdir(DATA_DIR).remove(".gitignore"))
+  clean_parser.add_argument("taskname")
   clean_parser.set_defaults(func=clean)
 
   create_parser = subparsers.add_parser("create")
@@ -383,9 +442,11 @@ def main():
 
   csv_parser = subparsers.add_parser("csv")
   csv_parser.set_defaults(func=csv_gen)
-
-
-
+  
+  plot_parser = subparsers.add_parser("plot")
+  plot_parser.add_argument("name", type=str)
+  plot_parser.set_defaults(func=plot)
+  
   args = parser.parse_args()
   args.func(args)
   
