@@ -434,7 +434,7 @@ def debug(args):
   if os.path.isdir(debug_build):
     shutil.rmtree(debug_build)
 
-  size = 2**param
+  size = 2**param-1
   test = [i for i in range(size)]
   res = {'debug' : test}
   tgtdir = os.path.join(CWD,"debug")
