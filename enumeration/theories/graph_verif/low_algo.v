@@ -542,9 +542,9 @@ Definition dim_full_test (A : Com.matrix) (lbl : Com.vtx_mapping)
     (length map_)
   ].
 
-Lemma dim_full_testE lbl map_ origin inv Po: 
-  DFC.dim_full_test lbl map_ origin inv Po = 
-  dim_full_test lbl map_ origin inv Po.
+Lemma dim_full_testE A lbl map_ origin inv: 
+  DFC.dim_full_test A lbl map_ origin inv = 
+  dim_full_test A lbl map_ origin inv.
 Proof.
 repeat congr andb; rewrite ?eqEint //.
 - by rewrite arr_allE; apply/eq_all=> ?; rewrite ltEint.

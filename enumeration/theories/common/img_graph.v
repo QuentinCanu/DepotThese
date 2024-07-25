@@ -36,11 +36,11 @@ Definition nei_check morph gl gr:=
     gl i)
   (length gl).
 
-Definition no_loop_check morph (gl gr : low_graph.graph):=
+(* Definition no_loop_check morph (gl gr : low_graph.graph):=
   IFold.iall (fun i=>
     GraphUtils.mem_vertex gr morph.[i] &&
     ~~(GraphUtils.mem_edge gr morph.[i] morph.[i]))
-  (length gl).
+  (length gl). *)
 
 Definition edge_inv_check morph edge_inv gl gr := 
   IFold.iall (fun i=>
@@ -55,7 +55,9 @@ Definition edge_inv_check morph edge_inv gl gr :=
   ) (length gr).
 
 Definition img_edge morph edge_inv gl gr :=
-  [&& nei_check morph gl gr, no_loop_check morph gl gr & edge_inv_check morph edge_inv gl gr].
+  [&& nei_check morph gl gr
+  (* no_loop_check morph gl gr  *)
+  & edge_inv_check morph edge_inv gl gr].
 
 Definition graph_img morph morph' edge_inv gl gr :=
   img_vertex morph morph' gl gr &&
@@ -89,11 +91,11 @@ Definition nei_check morph gl gr:=
     gl i)
   (length gl).
 
-Definition no_loop_check morph (gl gr : low_graph.graph):=
+(* Definition no_loop_check morph (gl gr : low_graph.graph):=
   iall (fun i=>
     mem_vertex gr morph.[i] &&
     ~~(mem_edge gr morph.[i] morph.[i]))
-  (length gl).
+  (length gl). *)
 
 Definition edge_inv_check morph edge_inv  gl gr:= 
   iall (fun i=>
@@ -108,7 +110,9 @@ Definition edge_inv_check morph edge_inv  gl gr:=
   ) (length gr).
 
 Definition img_edge morph edge_inv gl gr :=
-  [&& nei_check morph gl gr, no_loop_check morph gl gr & edge_inv_check morph edge_inv gl gr].
+  [&& nei_check morph gl gr 
+  (* no_loop_check morph gl gr  *)
+  & edge_inv_check morph edge_inv gl gr].
 
 Definition graph_img morph morph' edge_inv gl gr:=
     img_vertex morph morph' gl gr &&
@@ -132,8 +136,8 @@ repeat congr andb.
 - rewrite /IGC.nei_check iallE; apply/eq_all=> i.
   rewrite neighbour_allE; apply/eq_all=> j.
   by rewrite eqEint mem_edgeE.
-- rewrite /IGC.no_loop_check iallE; apply/eq_all=> i.
-  by rewrite mem_edgeE.
+(* - rewrite /IGC.no_loop_check iallE; apply/eq_all=> i.
+  by rewrite mem_edgeE. *)
 - rewrite /IGC.edge_inv_check iallE; apply/eq_all=> i.
   rewrite iallE; apply/eq_all=> j; case: (edge_inv.[i].[j])=> ??.
   by rewrite !mem_vertexE !eqEint !mem_edgeE.
@@ -202,11 +206,11 @@ congr implb; apply/idP/idP.
   by rewrite -(rel_struct_edge grGr) // moigr.
 Qed.
 
-Definition high_no_loop (morph : array int) (Gl Gr : graph [choiceType of int]):=
+(* Definition high_no_loop (morph : array int) (Gl Gr : graph [choiceType of int]):=
   all (fun x=> (morph.[x] \in vertices Gr) &&
-    ~~ (edges Gr morph.[x] morph.[x])) (vertices Gl).
+    ~~ (edges Gr morph.[x] morph.[x])) (vertices Gl). *)
 
-Lemma no_loop_check_struct morph:
+(* Lemma no_loop_check_struct morph:
   (rel_structure =~> rel_structure =~> eq)
   (no_loop_check morph) (high_no_loop morph).
 Proof.
@@ -216,7 +220,7 @@ apply/eq_all=> i; apply/idP/idP.
   by move=> ->; rewrite moigr.
 - case/andP; rewrite -(rel_struct_vtx grGr)=> moigr.
   by rewrite -(rel_struct_edge grGr) // moigr.
-Qed.
+Qed. *)
 
 Definition high_edge_inv morph edge_inv Gl gr Gr:=
   all (fun x=> all (fun y=> let: (a,b):= edge_inv.[x].[y] in
@@ -242,14 +246,18 @@ apply/idP/idP=> [/and5P [?? -> ->] //|/and3P [-> -> /=]].
 Qed.
 
 Definition high_img_edge morph edge_inv Gl gr Gr:=
-  [&& high_nei morph Gl Gr, high_no_loop morph Gl Gr & high_edge_inv morph edge_inv Gl gr Gr].
+  [&& high_nei morph Gl Gr 
+  (* high_no_loop morph Gl Gr *)
+  & high_edge_inv morph edge_inv Gl gr Gr].
 
 Lemma edge_check_struct morph edge_inv gl Gl gr Gr:
   rel_structure gl Gl -> rel_structure gr Gr ->
   img_edge morph edge_inv gl gr = high_img_edge morph edge_inv Gl gr Gr.
 Proof.
 move=> ??; repeat congr andb;
-  [exact:nei_check_struct|exact:no_loop_check_struct|exact:edge_inv_check_struct].
+  [exact:nei_check_struct|
+  (* exact:no_loop_check_struct| *)
+  exact:edge_inv_check_struct].
 Qed.
 
 Definition high_graph_img morph morph' edge_inv Gl gr Gr:=
@@ -270,7 +278,7 @@ move=> grGr.
 case/andP=> vtx_h edge_h; apply/graphE.
 rewrite vtx_img_graph (high_img_vtxP vtx_h); split=> // i j.
 apply/idP/idP.
-- case/and3P: edge_h=> _ no_loop_h /allP/(_ i) h /[dup] /edge_vtxlr [iGr jGr] /[dup] ijGr. 
+- case/andP: edge_h=> _ /allP/(_ i) h /[dup] /edge_vtxlr [iGr jGr] /[dup] ijGr. 
   rewrite -(rel_struct_edge grGr) ?(rel_struct_vtx grGr) //.
   move/neighboursP; rewrite !(rel_struct_vtx grGr).
   move=> /(_ iGr jGr) [k k_nei j_eq].
@@ -280,7 +288,7 @@ apply/idP/idP.
   * by move: (edges_neq ijGr); rewrite eq_sym.
   * exists a, b; split=> //; rewrite -?j_eq //.
 - case/edge_img_graph=> ij [a] [b] [i_eq j_eq abGl].
-  case/and3P: edge_h=> /allP /(_ _ (edge_vtxl abGl)) /allP /(_ b).
+  case/andP: edge_h=> /allP /(_ _ (edge_vtxl abGl)) /allP /(_ b).
   by rewrite in_succE => /(_ abGl); rewrite i_eq j_eq eq_sym ij.
 Qed.
 
