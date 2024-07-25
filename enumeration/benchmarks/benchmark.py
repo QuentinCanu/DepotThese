@@ -420,6 +420,34 @@ def plot(args):
 
 
 # --------------------------------------------------------------------
+DEBUG = r'''From Coq Require Import PArray Uint63.
+Require Import debug.
+
+(*{size}*)
+Check debug.
+Eval vm_compute in debug.[{number}%uint63].
+'''
+
+def debug(args):
+  param = args.param
+  debug_build = os.path.join(CWD,'..','..','_build','default','enumeration','benchmarks','debug')
+  if os.path.isdir(debug_build):
+    shutil.rmtree(debug_build)
+
+  size = 2**param
+  test = [i for i in range(size)]
+  res = {'debug' : test}
+  tgtdir = os.path.join(CWD,"debug")
+  os.makedirs(tgtdir, exist_ok=True)
+  dict2bin.dict2bin(tgtdir,res)
+  bin2coq.bin2coq("DEBUG",tgtdir)
+  with open(os.path.join(tgtdir,"test.v"), "w") as stream:
+    stream.write(DEBUG.format(number = size-1, size = size))
+  command_call(f"time dune build debug/debug.vo", prefix=TIME_MEM_PREFIX)
+  command_call(f"time dune build debug/test.vo", prefix=TIME_MEM_PREFIX)
+  
+
+# --------------------------------------------------------------------
 def main():
   parser = argp.ArgumentParser()
   subparsers = parser.add_subparsers()
@@ -446,6 +474,10 @@ def main():
   plot_parser = subparsers.add_parser("plot")
   plot_parser.add_argument("name", type=str)
   plot_parser.set_defaults(func=plot)
+
+  debug_parser = subparsers.add_parser("debug")
+  debug_parser.add_argument("param", type=int)
+  debug_parser.set_defaults(func=debug)
   
   args = parser.parse_args()
   args.func(args)

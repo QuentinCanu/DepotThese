@@ -43,7 +43,8 @@ DESCRIPTORS = dict(
     pred_vect_r1 =  '[([Q],[Q])]',
     unsrt_vtx_r1 = '[[Q]]',
     heap_lazy = '[Q]',
-    init_r1 = '[[Q]]'
+    init_r1 = '[[Q]]',
+    debug = '[I]'
 )
 
 DESCRIPTORS = {

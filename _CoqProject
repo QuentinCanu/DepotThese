@@ -2,6 +2,7 @@
 -R _build/default/enumeration/theories/common PolyhedraHirsch
 -R _build/default/enumeration/theories/graph_verif PolyhedraHirschVerif
 -R _build/default/enumeration/theories/improved_graph_verif PolyhedraHirschImprVerif
+-R _build/default/enumeration/theories/Rank1 PolyhedraHirschRank1
 
 -arg -w -arg -notation-overridden
 -arg -w -arg -redundant-canonical-projection
