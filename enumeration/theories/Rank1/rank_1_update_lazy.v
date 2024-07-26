@@ -36,104 +36,113 @@ Definition memory_update (memory : array (array (array (option bigQ))))
   let M := memory.[k].[j <- col] in
   memory.[k <- M].
 
+Definition current_update (certif_updates : array (array bigQ)) 
+  (current_cell current : int63):=
+  let next_current := Uint63.succ current in
+  if (next_current =? length certif_updates.[current_cell])%uint63
+    then (Uint63.succ current_cell, 0%uint63)
+    else (current_cell, next_current).
+
 Fixpoint eval
   (fuel : nat)
   (certif_bases : array basis)
   certif_pred
-  (certif_updates : array bigQ)
+  (certif_updates : array (array bigQ))
   (kJ : int63) (i j : int63)
   (memory : array (array (array (option bigQ))))
-  (current : int63):=
+  (current_cell current : int63):=
   if fuel is n.+1 then
-    if memory.[kJ].[j].[i] is Some value then (Some value,memory,current) else
+    if memory.[kJ].[j].[i] is Some value then (Some value,memory,current_cell,current) else
     let J := certif_bases.[kJ] in
     let '(kI, rs) := certif_pred.[kJ] in let '(r,s) := rs in let I := certif_bases.[kI] in
-    let '(Mrs,memory,current) := eval n certif_bases certif_pred certif_updates kI r (I.[s]+1)%uint63 memory current in
+    let '(Mrs,memory,current_cell,current) := eval n certif_bases certif_pred certif_updates kI r (I.[s]+1)%uint63 memory current_cell current in
     if Mrs is Some mrs then
-      if (mrs ?= 0)%bigQ is Eq then (None, memory, current)
+      if (mrs ?= 0)%bigQ is Eq then (None, memory, current_cell, current)
       else
         if (j =? r+1)%uint63 then
-          let '(Mis,memory,current) := eval n certif_bases certif_pred certif_updates kI i (I.[s]+1)%uint63 memory current in
+          let '(Mis,memory,current_cell,current) := eval n certif_bases certif_pred certif_updates kI i (I.[s]+1)%uint63 memory current_cell current in
           if Mis is Some mis then
-            let m'ir := certif_updates.[current] (*(-mis / mrs)%bigQ *) in
+            let m'ir := certif_updates.[current_cell].[current] (*(-mis / mrs)%bigQ *) in
             if (mrs * m'ir ?= -mis)%bigQ is Eq then
-              (Some m'ir, memory_update memory kJ i j m'ir, Uint63.succ current)
-            else (None, memory, current)
-          else (None, memory, current)
+              let '(next_current_cell, next_current) := current_update certif_updates current_cell current in
+              (Some m'ir, memory_update memory kJ i j m'ir, next_current_cell, next_current)
+            else (None, memory, current_cell, current)
+          else (None, memory, current_cell, current)
         else
-          let '(Mij,memory,current) := eval n certif_bases certif_pred certif_updates kI i j memory current in
+          let '(Mij,memory,current_cell,current) := eval n certif_bases certif_pred certif_updates kI i j memory current_cell current in
           if Mij is Some mij then
-            let '(Mis,memory,current) := eval n certif_bases certif_pred certif_updates kI i (I.[s]+1)%uint63 memory current in
+            let '(Mis,memory,current_cell,current) := eval n certif_bases certif_pred certif_updates kI i (I.[s]+1)%uint63 memory current_cell current in
             if Mis is Some mis then
-              let '(Mrj,memory,current) := eval n certif_bases certif_pred certif_updates kI r j memory current in
+              let '(Mrj,memory,current_cell,current) := eval n certif_bases certif_pred certif_updates kI r j memory current_cell current in
               if Mrj is Some mrj then
-                let m'ij := certif_updates.[current] (*(mij - mis * mrj / mrs)%bigQ*) in
+                let m'ij := certif_updates.[current_cell].[current] (*(mij - mis * mrj / mrs)%bigQ*) in
                 if (((mij - m'ij) * mrs ?= mis * mrj)%bigQ) is Eq then
-                  (Some m'ij, memory_update memory kJ i j m'ij, Uint63.succ current)
-                else (None, memory, current)
-              else (None, memory, current)
-            else (None, memory, current)
-          else (None, memory, current)
-    else (None, memory, current)
-  else (None, memory, current).
+                  let '(next_current_cell,next_current) := current_update certif_updates current_cell current in
+                  (Some m'ij, memory_update memory kJ i j m'ij, next_current_cell, next_current)
+                else (None, memory, current_cell, current)
+              else (None, memory, current_cell, current)
+            else (None, memory, current_cell, current)
+          else (None, memory, current_cell, current)
+    else (None, memory, current_cell, current)
+  else (None, memory, current_cell, current).
 
 Definition lazy_sat_pert
   (certif_bases : array basis)
   certif_pred certif_updates (root_base : int63)
   (k : int63) (sat_vect : array comparison)
-  memory current:=
+  memory current_cell current:=
   let I := certif_bases.[root_base] in
-  let '(_,res,memory,current) := IFold.ifold
-    (fun i '(j, acc, memory, current)=>
+  let '(_,res,memory,current_cell,current) := IFold.ifold
+    (fun i '(j, acc, memory, current_cell, current)=>
        if (I.[j] =? i)%uint63 then
-         ((j+1)%uint63, acc, memory, current) (* no-op when i is a line in the basis *)
+         ((j+1)%uint63, acc, memory, current_cell, current) (* no-op when i is a line in the basis *)
        else
          if acc.[i] is Eq then
-           let '(value, memory, current) := eval Uint63.size certif_bases certif_pred certif_updates root_base i (I.[k]+1)%uint63 memory current in
+           let '(value, memory, current_cell, current) := eval Uint63.size certif_bases certif_pred certif_updates root_base i (I.[k]+1)%uint63 memory current_cell current in
            if value is Some v then
-             (j, acc.[i <- (v ?= 0)%bigQ],memory,current)
+             (j, acc.[i <- (v ?= 0)%bigQ],memory,current_cell,current)
            else
-             (j, acc.[i <- Lt],memory,current) (* HACK here, to be fixed *)
+             (j, acc.[i <- Lt],memory,current_cell,current) (* HACK here, to be fixed *)
          else
-           (j, acc, memory,current) (* no-op since we only need to break inequality ties *)
-    ) (length sat_vect) (0%uint63, sat_vect, memory, current)
+           (j, acc, memory,current_cell,current) (* no-op since we only need to break inequality ties *)
+    ) (length sat_vect) (0%uint63, sat_vect, memory, current_cell, current)
   in
-  (res,memory,current).
+  (res,memory,current_cell,current).
 
 Definition lazy_check_basis (m : int63)
   (certif_bases : array basis)
   (certif_pred : array (int63 * (int63 * int63)))
   certif_updates
   (root_base : int63)
-  memory current:=
+  memory current_cell current:=
   let I := certif_bases.[root_base] in
   let '(I0, (r, s)) := certif_pred.[root_base] in
-  let '(Mrs, memory, current) :=
-    eval Uint63.size certif_bases certif_pred certif_updates I0 r ((certif_bases.[I0]).[s]+1)%uint63 memory current in
+  let '(Mrs, memory, current_cell, current) :=
+    eval Uint63.size certif_bases certif_pred certif_updates I0 r ((certif_bases.[I0]).[s]+1)%uint63 memory current_cell current in
   if Mrs is Some Mrs then
-    if (Mrs ?= 0)%bigQ is Eq then (Some false, memory, current)
+    if (Mrs ?= 0)%bigQ is Eq then (Some false, memory, current_cell, current)
     else
-      let '(_, sat_vect, memory, current) :=
+      let '(_, sat_vect, memory, current_cell, current) :=
         IFold.ifold
-          (fun i '(j, acc, memory, current) =>
+          (fun i '(j, acc, memory, current_cell, current) =>
              if (I.[j] =? i)%uint63 then
-               ((j+1)%uint63, acc, memory, current)
+               ((j+1)%uint63, acc, memory, current_cell, current)
              else
-               let '(Mi0, memory, current) := eval Uint63.size certif_bases certif_pred certif_updates root_base i 0%uint63 memory current in
+               let '(Mi0, memory, current_cell, current) := eval Uint63.size certif_bases certif_pred certif_updates root_base i 0%uint63 memory current_cell current in
                if Mi0 is Some mi0 then
-                 (j, acc.[i <- (mi0 ?= 0)%bigQ], memory, current)
-               else (j, acc.[i <- Lt], memory, current)) m (0%uint63, make m Eq, memory, current)
+                 (j, acc.[i <- (mi0 ?= 0)%bigQ], memory, current_cell, current)
+               else (j, acc.[i <- Lt], memory, current_cell, current)) m (0%uint63, make m Eq, memory, current_cell, current)
       in
-      let '(_, sat_lex, memory,current) :=
+      let '(_, sat_lex, memory,current_cell, current) :=
         IFold.ifold
-          (fun i '(j, acc, memory,current) =>
+          (fun i '(j, acc, memory,current_cell,current) =>
              if (I.[j] =? i)%uint63 then
-               let '(acc,memory,current) :=
-                 lazy_sat_pert certif_bases certif_pred certif_updates root_base j acc memory current
+               let '(acc,memory,current_cell,current) :=
+                 lazy_sat_pert certif_bases certif_pred certif_updates root_base j acc memory current_cell current
                in
-               ((j+1)%uint63, acc, memory, current)
+               ((j+1)%uint63, acc, memory, current_cell, current)
              else
-               (j, acc.[i <- Gt], memory, current)) m (0%uint63, sat_vect, memory, current)
+               (j, acc.[i <- Gt], memory, current_cell, current)) m (0%uint63, sat_vect, memory, current_cell, current)
       in
       let '(_, res) :=
         IFold.ifold
@@ -146,9 +155,9 @@ Definition lazy_check_basis (m : int63)
              else
                (j, false)) (length sat_lex) (0%uint63, true)
       in
-      (Some res, memory, current)
+      (Some res, memory, current_cell, current)
   else
-      (None, memory, current).
+      (None, memory, current_cell, current).
 
 Definition build_initial_memory
   (certif_bases : array basis) (init : matrix) m N root :=
@@ -171,14 +180,14 @@ Definition lazy_check_all_bases
   (root : int63) init certif_updates :=
   let memory := build_initial_memory certif_bases init (length A) (length certif_bases) root in
   IFold.ifold
-    (fun i '(acc, memory, current) =>
-       if (i =? root)%uint63 then (acc, memory, current)
+    (fun i '(acc, memory, current_cell, current) =>
+       if (i =? root)%uint63 then (acc, memory, current_cell, current)
        else
          match acc with
-         | None => (acc, memory, current)
-         | Some false => (acc, memory, current)
-         | _ => lazy_check_basis (length A) certif_bases certif_pred certif_updates i memory current
-         end) (length certif_bases) (Some true, memory, 0%uint63).
+         | None => (acc, memory, current_cell, current)
+         | Some false => (acc, memory, current_cell, current)
+         | _ => lazy_check_basis (length A) certif_bases certif_pred certif_updates i memory current_cell current
+         end) (length certif_bases) (Some true, memory, 0%uint63, 0%uint63).
 
 (* Definition full_dimensional (certif_dim : array int63) (memory : array (array (array (option bigQ)))):=
   IFold.iall (fun i=>
@@ -211,7 +220,7 @@ Definition label_img
   ) (length morph). *)
 
 Definition lazy_rank_1_update A b certif_bases certif_pred root init certif_updates :=
-  let '(val, memory, _):= lazy_check_all_bases A b certif_bases certif_pred root init certif_updates in
+  let '(val, memory, _, _):= lazy_check_all_bases A b certif_bases certif_pred root init certif_updates in
   if val is Some true then true else false.
 
 

@@ -9,6 +9,7 @@ from .. import farkas as fk
 import sympy as sym
 from sympy.polys.domains  import QQ
 from sympy.polys.matrices import DomainMatrix
+import itertools
 
 CWD = os.getcwd()
 DATA_DIR = os.path.join(CWD, "data")
@@ -17,6 +18,10 @@ DATA_DIR = os.path.join(CWD, "data")
 # -------------------------------------------------------------------
 def bigq(x):
     return str(x)
+
+def chunk(lst,size):
+    for i in range(0,len(lst),size):
+        yield lst[i:i+size]
 
 # Extract polyhedron information from lrs files
 # -------------------------------------------------------------------
@@ -200,7 +205,8 @@ def get_heap(A,bases,idx,pred,init):
                             if sat_vect[p] == 0:
                                 val = eval(kJ,p,1+q)
                                 sat_vect[p] = 1 if val > 0 else 0
-    return [bigq(elt) for elt in heap]
+    lst = [bigq(elt) for elt in heap]
+    return list(chunk(lst,1<<24))
 
 # Construct the graph of vertices + certificates related to the image graph
 # -------------------------------------------------------------------

@@ -224,6 +224,7 @@ def execution(algo,compute=False):
 def clean(args):
   dirname = args.dirname
   taskname = args.taskname
+  certificates = args.certificates
   if dirname in os.listdir(DATA_DIR):
     taskdir = os.path.join(DATA_DIR,dirname,taskname)
     if os.path.isdir(taskdir):
@@ -231,12 +232,18 @@ def clean(args):
     builddir = os.path.join(BUILD_DATA_DIR,dirname,taskname)
     if os.path.isdir(builddir):
       shutil.rmtree(builddir)
+    if certificates:
+      certdir = os.path.join(DATA_DIR,dirname,"certificates",taskname)
+      if os.path.isdir(certdir):
+        shutil.rmtree(certdir)
   benchfile = os.path.join(DATA_DIR,dirname,f"benchmarks_{dirname}.json")
   if os.path.exists(benchfile):
     with open(benchfile) as stream:
       bench = json.load(stream)
       bench[f"{taskname}_conversion"] = None
       bench[f"{taskname}_execution"] = None
+      if certificates:
+        bench[f"{taskname}_generation"] = None
     with open(benchfile, "w") as stream:
       json.dump(bench,stream,indent=0)
 
@@ -315,7 +322,7 @@ HIRSCH_TASKS = {
   }
 
 def create(args):
-  polytope,dim = args.polytope, args.dim[0]
+  polytope,dim = args.polytope, args.dim
   text,compute = args.text,args.compute
   if not text:
     del TASKS["graph_certif_conversion_text"]
@@ -456,6 +463,7 @@ def main():
   clean_parser = subparsers.add_parser("clean")
   clean_parser.add_argument("dirname", choices=os.listdir(DATA_DIR).remove(".gitignore"))
   clean_parser.add_argument("taskname")
+  clean_parser.add_argument("--certificates", action="store_true")
   clean_parser.set_defaults(func=clean)
 
   create_parser = subparsers.add_parser("create")
