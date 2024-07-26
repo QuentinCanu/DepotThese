@@ -351,30 +351,31 @@ def to_csv(json_paths, tgtfile):
       writer.writerow(dict(polytope = name, **res))
 
 
-def csv_gen(_):
-  hirsch_paths = []
-  cube_paths = []
-  cross_paths = []
-  cyclic_paths = []
-  permutohedron_paths = []
-  for name in os.listdir(DATA_DIR):
+def csv_gen(args):
+  polytope = args.polytope
+  mini, maxi = args.mini, args.maxi
+  polytope_paths = []
+  name_list = []
+  data_list = os.listdir(DATA_DIR)
+  if polytope == HIRSCH:
+    for name in HIRSCH_CEX:
+      if name in data_list:
+        name_list.append(name)
+  elif mini is None or maxi is None:
+    for name in data_list:
+      if name.startswith(polytope):
+        name_list.append(name)
+    name_list.sort(key=(lambda name : [int(s) for s in name.split("_") if s.isdigit()]))
+  else:
+    for k in range(mini,maxi+1):
+      name = f"{polytope}_{k}"
+      if name in data_list:
+        name_list.append(name)
+  for name in name_list:
     json_path = os.path.join(DATA_DIR,name,f"benchmarks_{name}.json")
     if os.path.exists(json_path):
-      if name in HIRSCH_CEX:
-        hirsch_paths.append((name,json_path))
-      elif name.startswith("cube"):
-        cube_paths.append((name,json_path))
-      elif name.startswith("cross"):
-        cross_paths.append((name,json_path))
-      elif name.startswith("cyclic"):
-        cyclic_paths.append((name,json_path))
-      elif name.startswith("permutohedron"):
-        permutohedron_paths.append((name,json_path))
-  to_csv(hirsch_paths, HIRSCH + ".csv")
-  to_csv(cube_paths, "cube.csv")
-  to_csv(cross_paths, "cross.csv")
-  to_csv(cyclic_paths, "cyclic.csv")
-  to_csv(permutohedron_paths, "permutohedron.csv")
+      polytope_paths.append((name,json_path))
+  to_csv(polytope_paths, polytope + ".csv")
 
 
 # --------------------------------------------------------------------
@@ -392,7 +393,7 @@ def plot(args):
       pivot = []
       r1_matrix = []
       r1_vector = []
-      lazy = []
+      # lazy = []
       for row in reader:
         polytope.append(row['polytope'])
         lrs.append(float(row['lrs : time']))
@@ -402,7 +403,7 @@ def plot(args):
         pivot.append(float(row['pivot_execution : pivot.v execution time']))
         r1_matrix.append(float(row['r1_matrix_execution : r1_matrix.v execution time']))
         r1_vector.append(float(row['r1_vector_execution : r1_vector.v execution time']))
-        lazy.append(float(row['lazy_execution : lazy.v execution time']))
+        # lazy.append(float(row['lazy_execution : lazy.v execution time']))
       
 
 
@@ -413,7 +414,7 @@ def plot(args):
   pp.plot(polytope, pivot, label="pivot")
   pp.plot(polytope, r1_matrix, label="r1_matrix")
   pp.plot(polytope, r1_vector, label="r1_vector")
-  pp.plot(polytope, lazy, label="lazy")
+  # pp.plot(polytope, lazy, label="lazy")
   pp.legend()
   pp.show()
 
@@ -459,7 +460,7 @@ def main():
 
   create_parser = subparsers.add_parser("create")
   create_parser.add_argument("polytope", choices=POLYTOPES)
-  create_parser.add_argument("dim", type=int, nargs=1)
+  create_parser.add_argument("dim", type=int)
   create_parser.add_argument("--text", action="store_true")
   create_parser.add_argument("--compute", action="store_true")
   create_parser.set_defaults(func=create)
@@ -469,6 +470,9 @@ def main():
   hirsch_parser.set_defaults(func=hirsch)
 
   csv_parser = subparsers.add_parser("csv")
+  csv_parser.add_argument("polytope", choices=[HIRSCH]+POLYTOPES)
+  csv_parser.add_argument("mini", type=int, nargs='?', default=None)
+  csv_parser.add_argument("maxi", type=int, nargs='?', default=None)
   csv_parser.set_defaults(func=csv_gen)
   
   plot_parser = subparsers.add_parser("plot")

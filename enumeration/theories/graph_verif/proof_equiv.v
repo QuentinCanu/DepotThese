@@ -3,7 +3,7 @@ From Coq Require Import Uint63 PArray.
 From Polyhedra Require Import extra_misc inner_product extra_matrix vector_order affine row_submx barycenter.
 From Polyhedra Require Import lrel polyhedron poly_base simplex.
 From PolyhedraHirsch Require Import low_graph high_graph img_graph extra_array extra_int rat_bigQ array_set diameter refinement extra_simplex.
-Require Import low_algo high_algo.
+From PolyhedraHirschVerif Require Import low_algo high_algo.
 Require Import NArith.BinNat NArith.BinNatDef.
 From Bignums Require Import BigQ.
 
