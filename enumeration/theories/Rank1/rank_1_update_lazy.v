@@ -36,10 +36,12 @@ Definition memory_update (memory : array (array (array (option bigQ))))
   let M := memory.[k].[j <- col] in
   memory.[k <- M].
 
+Definition max_length_24 := Eval vm_compute in Uint63.lsl 1%uint63 24%uint63.
+
 Definition current_update (certif_updates : array (array bigQ)) 
   (current_cell current : int63):=
   let next_current := Uint63.succ current in
-  if (next_current =? length certif_updates.[current_cell])%uint63
+  if (next_current =? max_length_24)%uint63
     then (Uint63.succ current_cell, 0%uint63)
     else (current_cell, next_current).
 

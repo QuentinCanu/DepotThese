@@ -432,8 +432,11 @@ DEBUG = r'''From Coq Require Import PArray Uint63.
 Require Import debug.
 
 (*{size}*)
-Check debug.
-Eval vm_compute in debug.[{number}%uint63].
+(*Time Eval vm_compute in (length debug.[0%uint63]).*)
+(*Time Eval vm_compute in (length debug.[1%uint63]).*)
+(*Time Eval vm_compute in debug.[0%uint63].[{number}%uint63].*)
+(*Time Eval vm_compute in debug.[1%uint63].[{number}%uint63].*)
+Time Eval vm_compute in (length debug).
 '''
 
 def debug(args):
@@ -442,7 +445,8 @@ def debug(args):
   if os.path.isdir(debug_build):
     shutil.rmtree(debug_build)
 
-  size = 2**param-1
+  size = 1 << param
+  # test = [[i for i in range(size)],[i for i in range(size)]]
   test = [i for i in range(size)]
   res = {'debug' : test}
   tgtdir = os.path.join(CWD,"debug")
