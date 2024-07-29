@@ -34,8 +34,6 @@ Here are some commands to configure an opam switch that contains everything mand
         $> opam pin add -n https://github.com/Coq-Polyhedra/mathcomp.git
         $> opam pin add -n https://github.com/Coq-Polyhedra/finmap.git
         $> opam pin add -n https://github.com/Coq-Polyhedra/coq-binreader.git#main
-        $> opam update
-        $> opam upgrade
         $> opam install dune coq coq-mathcomp-field coq-mathcomp-finmap coq-binreader
 ## Description of the repository
 
