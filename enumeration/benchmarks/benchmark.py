@@ -22,6 +22,7 @@ DATA_DIR = os.path.join(CWD,"data")
 JOB_DIR = os.path.join(CWD,"jobs")
 BUILD_DATA_DIR = os.path.join(CWD,'..','..','_build','default','enumeration','benchmarks','data')
 NO_BENCH = "------"
+TIMEOUT_COEFF = 100
 COMMON = "common"
 GRAPH_CERTIF = "graph_certif"
 HIRSCH = "hirsch"
@@ -32,6 +33,7 @@ PIVOT = "pivot"
 R1_MATRIX = "r1_matrix"
 R1_VECTOR = "r1_vector"
 LAZY = "lazy"
+JOBS = [GRAPH_CERTIF, DIAMETER, IMPROVED, RANK1, PIVOT, R1_MATRIX, R1_VECTOR, LAZY]
 
 GENERATORS = {
     COMMON : lrs2common.lrs2common,
@@ -74,7 +76,10 @@ def command_call(command, timeout=None, prefix=""):
             shell=True, executable="/bin/zsh", check=True,
             capture_output=True, text=True, timeout=timeout)
     print(output.stdout, output.stderr)
-    return output.stderr
+    return True, output.stderr
+  except sp.TimeoutExpired:
+    print("TIMEOUT !")
+    return False, timeout
   except:
     print("ERREUR !")
     return None
@@ -82,10 +87,13 @@ def command_call(command, timeout=None, prefix=""):
 def format_time_output(st):
   if st is None:
     return None, None
-  findit = re.search(r"(?P<time>\d+)[,.](?P<mtime>\d+)s.+, (?P<memory>\d+)", st)
-  time, mtime = findit.group("time"), findit.group("mtime")
-  memory = float(findit.group("memory"))
-  return f"{time}.{mtime}", str(memory)
+  if st[0]:
+    findit = re.search(r"(?P<time>\d+)[,.](?P<mtime>\d+)s.+, (?P<memory>\d+)", st[1])
+    time, mtime = findit.group("time"), findit.group("mtime")
+    memory = float(findit.group("memory"))
+    return f"{time}.{mtime}", str(memory)
+  else:
+    return f"{st[1]} (TIMEOUT)", "None (TIMEOUT)"
 
 # --------------------------------------------------------------------
 def polytope_name(polytope,param):
@@ -106,7 +114,7 @@ def gen_lrs(polytope, param):
       genlrs.generate_lrs(polytope, param)
 
 # --------------------------------------------------------------------
-def compute_lrs(name):
+def compute_lrs(name,_):
   inefile = os.path.join(DATA_DIR, name, "lrs", name+".ine")
   extfile = os.path.join(DATA_DIR, name, "lrs", name+".ext")
   time, memory = format_time_output(command_call(f"time lrs {inefile} {extfile}",prefix=TIME_MEM_PREFIX))
@@ -114,7 +122,7 @@ def compute_lrs(name):
 
 # --------------------------------------------------------------------
 def generation(tgtname, start, *certificates):
-  def worker(name):
+  def worker(name,_):
     st = time.time()
     tgtdir = os.path.join(DATA_DIR, name, "certificates", tgtname)
     os.makedirs(tgtdir,exist_ok=True)
@@ -138,7 +146,7 @@ def generation(tgtname, start, *certificates):
   return worker
 
 # --------------------------------------------------------------------
-def job(jobdir, *relpath):
+def job(jobdir, timeout, *relpath):
   res = {}
   times = []
   max_memory = -math.inf
@@ -148,17 +156,13 @@ def job(jobdir, *relpath):
   for file in files:
     if file.endswith(".v"):
       rel_path = os.path.join(*relpath, file+"o")
-      st = command_call("time dune build " + rel_path, prefix=TIME_MEM_PREFIX)
+      st = command_call("time dune build " + rel_path, prefix=TIME_MEM_PREFIX, timeout=timeout)
       time, memory = format_time_output(st)
       res[file + " execution time"] = time
       res[file + " execution memory"] = memory
-      times.append(float(time if time is not None else 0.0))
-      max_memory = max(max_memory,float(memory if memory is not None else 0.0))
-  res["total execution time"] = str(math.fsum(times))
-  res["max execution memory"] = str(max_memory)
   return res
 
-def certif_compilation(tgtdir, *relpath):
+def certif_compilation(tgtdir, timeout, *relpath):
   res = {}
   times = []
   max_memory = -math.inf
@@ -167,18 +171,14 @@ def certif_compilation(tgtdir, *relpath):
     if file.endswith(".v"):
       print(f"Compiling {file}")
       rel_path = os.path.join(*relpath,file+"o")
-      st = command_call("time dune build " + rel_path,prefix=TIME_MEM_PREFIX)
+      st = command_call("time dune build " + rel_path,prefix=TIME_MEM_PREFIX, timeout=timeout)
       time, memory = format_time_output(st)
       res[file + " compilation time"] = time
       res[file + " memory"] = memory
-      times.append(float(time if time is not None else 0.0))
-      max_memory = max(max_memory,float(memory if memory is not None else 0.0))
-  res["total compilation time"] = str(math.fsum(times))
-  res["max compilation memory"] = str(max_memory)
   return res
 # --------------------------------------------------------------------
-def conversion(certif_type, text=False):
-  def worker(name):
+def conversion(certif_type,text=False):
+  def worker(name,benchmarks):
     res = {}
     certif_path = os.path.join(DATA_DIR, name, "certificates", certif_type, name+".json")
     with open(certif_path) as stream:
@@ -204,19 +204,23 @@ def conversion(certif_type, text=False):
       et = time.time()
       res["time of serialization"] = et - st
       res.update(bench)
-      res.update(certif_compilation(bindir, *binpath))
+      timeout = TIMEOUT_COEFF*max(1,math.ceil(float(benchmarks["lrs"]["time"])))
+      print("The execution timeout is in", timeout)
+      res.update(certif_compilation(bindir, timeout, *binpath))
     return res
   return worker
 
 # --------------------------------------------------------------------
 def execution(algo,compute=False):
-  def worker(name):
+  def worker(name,bench):
     tgtpath = ["data", name, algo, "compute" if compute else "vm_compute"]
     tgtdir = os.path.join(CWD, *tgtpath)
     os.makedirs(tgtdir,exist_ok = True)
     jobdir = os.path.join(JOB_DIR, algo)
     coqjobs.coqjob(name, dune_name_algo(name, algo,compute), dune_name_certif(name, algo), PREREQUISITES[algo], jobdir, tgtdir, compute)
-    return job(tgtdir,*tgtpath)
+    timeout = TIMEOUT_COEFF*max(1,math.ceil(float(bench["lrs"]["time"])))
+    print("The execution timeout is in", timeout)
+    return job(tgtdir,timeout,*tgtpath)
   return worker
 
 # --------------------------------------------------------------------
@@ -249,7 +253,7 @@ def clean(args):
 
 
 # --------------------------------------------------------------------
-def make_benchmarks(name,taskdict):
+def make_benchmarks(name,taskdict,exclude):
   benchmarks_path = os.path.join(DATA_DIR,name,f"benchmarks_{name}.json")
   if os.path.exists(benchmarks_path):
     with open(benchmarks_path) as stream:
@@ -258,8 +262,11 @@ def make_benchmarks(name,taskdict):
     benchmarks = dict(zip(taskdict,it.repeat(None)))
   for task in taskdict.keys():
     print(f"Performing {task}")
+    if task.startswith(exclude):
+      benchmarks[task] = "Excluded"
+      print(f"{task} had been excluded")
     if benchmarks.get(task, None) is None:
-      res = taskdict[task](name)
+      res = taskdict[task](name,benchmarks)
       benchmarks[task] = res
       with open(benchmarks_path, "w") as stream:
         json.dump(benchmarks,stream,indent=0)
@@ -324,13 +331,14 @@ HIRSCH_TASKS = {
 def create(args):
   polytope,dim = args.polytope, args.dim
   text,compute = args.text,args.compute
+  exclude = tuple(args.exclude) if args.exclude is not None else ()
   if not text:
     del TASKS["graph_certif_conversion_text"]
   if not compute:
     del TASKS["graph_certif_execution_compute"]
   name = polytope_name(polytope,dim)
   gen_lrs(polytope,dim)
-  make_benchmarks(name,TASKS)
+  make_benchmarks(name,TASKS,exclude)
 
 def hirsch(args):
   name = args.which
@@ -343,6 +351,7 @@ def to_csv(json_paths, tgtfile):
     return None
   benchmarks = []
   for (name,path) in json_paths:
+    print(name)
     with open(path) as stream:
       bench = json.load(stream)
       res = {}
@@ -375,7 +384,7 @@ def csv_gen(args):
     name_list.sort(key=(lambda name : [int(s) for s in name.split("_") if s.isdigit()]))
   else:
     for k in range(mini,maxi+1):
-      name = f"{polytope}_{k}"
+      name = polytope_name(polytope,k)
       if name in data_list:
         name_list.append(name)
   for name in name_list:
@@ -388,29 +397,61 @@ def csv_gen(args):
 # --------------------------------------------------------------------
 def plot(args):
   name = args.name
-  csvname = f"{name}.csv" 
-  if os.path.exists(csvname):
-    with open(csvname) as stream:
-      reader = csv.DictReader(stream)
-      polytope = []
-      lrs = []
-      graph_certif = []
-      improved = []
-      rank1 = []
-      pivot = []
-      r1_matrix = []
-      r1_vector = []
-      # lazy = []
-      for row in reader:
-        polytope.append(row['polytope'])
-        lrs.append(float(row['lrs : time']))
-        graph_certif.append(float(row['graph_certif_execution : vertex_consistent_r.v execution time']))
-        improved.append(float(row['improved_execution : improved.v execution time']))
-        rank1.append(float(row['rank1_execution : rank1.v execution time']))
-        pivot.append(float(row['pivot_execution : pivot.v execution time']))
-        r1_matrix.append(float(row['r1_matrix_execution : r1_matrix.v execution time']))
-        r1_vector.append(float(row['r1_vector_execution : r1_vector.v execution time']))
-        # lazy.append(float(row['lazy_execution : lazy.v execution time']))
+  mini, maxi = args.mini, args.maxi
+  data_names = os.listdir(DATA_DIR)
+  polytope = []
+  lrs = []
+  graph_certif = []
+  improved = []
+  rank1 = []
+  pivot = []
+  r1_matrix = []
+  r1_vector = []
+  lazy = []
+  for k in range(mini,maxi+1):
+    poly_name = polytope_name(name,k)
+    if poly_name in data_names:
+      json_path = os.path.join(DATA_DIR,poly_name,f"benchmarks_{poly_name}.json")
+      if os.path.exists(json_path):
+        with open(json_path) as stream:
+          dic = json.load(stream)
+        polytope.append(poly_name)
+        lrs.append(dic['lrs']['time'])
+        if k != 14:
+          graph_certif.append(float(dic['graph_certif_execution']['vertex_consistent_r.v execution time']))
+        else:
+          graph_certif.append(0.)
+        improved.append(float(dic['improved_execution']['improved.v execution time']))
+        rank1.append(float(dic['rank1_execution']['rank1.v execution time']))
+        pivot.append(float(dic['pivot_execution']['pivot.v execution time']))
+        if k != 14:
+          r1_matrix.append(float(dic['r1_matrix_execution']['r1_matrix.v execution time']))
+        else:
+          r1_matrix.append(0.)
+        if k != 14:
+          r1_vector.append(float(dic['r1_vector_execution']['r1_vector.v execution time']))
+        else:
+          r1_vector.append(0.)
+        if k != 8:
+          lazy.append(float(dic['lazy_execution']['lazy.v execution time']))
+        else:
+          lazy.append(0.)
+
+
+
+  # if os.path.exists(csvname):
+  #   with open(csvname) as stream:
+  #     reader = csv.DictReader(stream)
+  #     for row in reader:
+  #       polytope.append(row['polytope'])
+  #       lrs.append(float(row['lrs : time']))
+  #       graph_certif.append(float(row['graph_certif_execution : vertex_consistent_r.v execution time']))
+  #       improved.append(float(row['improved_execution : improved.v execution time']))
+  #       rank1.append(float(row['rank1_execution : rank1.v execution time']))
+  #       pivot.append(float(row['pivot_execution : pivot.v execution time']))
+  #       r1_matrix.append(float(row['r1_matrix_execution : r1_matrix.v execution time']))
+  #       r1_vector.append(float(row['r1_vector_execution : r1_vector.v execution time']))
+  #       lazy.append(float(row['lazy_execution : lazy.v execution time']))
       
 
 
@@ -421,7 +462,7 @@ def plot(args):
   pp.plot(polytope, pivot, label="pivot")
   pp.plot(polytope, r1_matrix, label="r1_matrix")
   pp.plot(polytope, r1_vector, label="r1_vector")
-  # pp.plot(polytope, lazy, label="lazy")
+  pp.plot(polytope, lazy, label="lazy")
   pp.legend()
   pp.show()
 
@@ -475,6 +516,7 @@ def main():
   create_parser.add_argument("dim", type=int)
   create_parser.add_argument("--text", action="store_true")
   create_parser.add_argument("--compute", action="store_true")
+  create_parser.add_argument("--exclude", nargs="+", choices=JOBS)
   create_parser.set_defaults(func=create)
 
   hirsch_parser = subparsers.add_parser(HIRSCH)
@@ -489,6 +531,8 @@ def main():
   
   plot_parser = subparsers.add_parser("plot")
   plot_parser.add_argument("name", type=str)
+  plot_parser.add_argument("mini", type=int, nargs='?', default=None)
+  plot_parser.add_argument("maxi", type=int, nargs='?', default=None)
   plot_parser.set_defaults(func=plot)
 
   debug_parser = subparsers.add_parser("debug")
