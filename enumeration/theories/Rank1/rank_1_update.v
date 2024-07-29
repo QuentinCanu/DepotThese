@@ -20,21 +20,16 @@ Local Notation int63 := Uint63.int.
 Module Rank1Certif.
 
 (* ------------------------------------------------------------------ *)
-Definition sat_pert (Ax : (array bigQ)) (m : int63) (cmp : array comparison):=
+Definition sat_pert (Ax : (array bigQ)) (cmp : array comparison):=
   IFold.ifold (fun i cmp=>
-    if cmp.[i] is Eq then
-      if (i =? m)%uint63 then cmp.[i <- (Ax.[i] ?= -1)%bigQ] else cmp.[i <- (Ax.[i] ?= 0)%bigQ]
+    if cmp.[i] is Eq then cmp.[i <- (Ax.[i] ?= 0)%bigQ]
     else cmp
   ) (length cmp) cmp.
 
-Definition cmp_vect (u : array bigQ) (v : array bigQ):=
-  PArrayUtils.mk_fun (fun i=> (u.[i] ?= v.[i])%bigQ) (length u)%uint63 Eq.
-
 Definition sat_cmp (M : array (array bigQ)) :=
-  let col0 := make (length M.[0]) 0%bigQ in
-  IFold.ifoldx (fun i cmp=>
-    sat_pert M.[i] (Uint63.pred i) cmp
-  ) 1%uint63 (length M) (cmp_vect M.[0] col0).
+  IFold.ifold (fun i cmp=>
+    sat_pert M.[i] cmp
+  ) (length M) (make (length M.[0%uint63]) Eq).
 
 Definition sat_lex (M : array (array bigQ)) (I : array int63):=
   let cmp := sat_cmp M in
@@ -65,32 +60,78 @@ Definition sat_lex (M : array (array bigQ)) (I : array int63):=
 Definition update
   (I : array Uint63.int) (r s : Uint63.int)
   (M : array (array bigQ)) :=
-  let M' := PArrayUtils.mk_fun (fun _ => make (length M.[0]) 0%bigQ) (length M) (default M) in
   let Is := I.[s] in
   let Ms := M.[Uint63.succ Is] in
   let Mrs := Ms.[r] in
-  let M0r := M.[0].[r] in
-  let M'0 :=
-    PArrayUtils.mk_fun
-      (fun k => BigQ.red ((M.[0].[k] * Mrs - M0r * Ms.[k]) / Mrs)%bigQ)
-      (length M.[0]) (default M.[0]) in
-  let M' := M'.[0 <- M'0] in
-  let M' := IFold.ifold (fun k 'M' =>
-    if (k =? s)%uint63 then M' else
-    let Ik := I.[k] in
-    let M'Ik :=
-      IFold.ifold (fun l MIk =>
-        let Mlk := M.[Uint63.succ Ik].[l] in
-        let Mls := M.[Uint63.succ Is].[l] in
+  let M' := PArrayUtils.mk_fun (fun _ => make (length M.[0]) 0%bigQ) (length M) (default M) in
+  let M' := (IFold.ifold (fun j '(k,M')=>
+  if (j =? 0)%uint63 then
+    let M'0 := (IFold.ifold (fun i '(k0,M'0)=>
+      let Mr0 := M.[0].[r] in
+      if (i =? I.[k0])%uint63 then
+        if (i =? Is)%uint63 then
+          let z := BigQ.red (M.[0].[i] + Mr0 / Mrs)%bigQ in
+          (Uint63.succ k0, M'0.[i <- z])
+        else
+          (Uint63.succ k0, M'0)
+      else
+        if (i =? r)%uint63 then
+          (k0, M'0)
+        else
+          let z := BigQ.red (M.[0].[i] - (Mr0 / Mrs) * Ms.[i])%bigQ in
+        (k0, M'0.[i <- z])
+    ) (length M.[0]) (0%uint63, make (length M.[0%uint63]) 0%bigQ)).2 in
+    (k, M'.[j <- M'0])
+  else
+    if (j =? Uint63.succ I.[k])%uint63 then
+      if (j =? Uint63.succ Is)%uint63 then
+        let M'j := PArrayUtils.mk_fun 
+          (fun i=> if (i=?Uint63.pred j)%uint63 then 1%bigQ else 0%bigQ)
+        (length M.[0]) (0%bigQ) 
+        in (Uint63.succ k, M'.[j <- M'j])
+      else
+        let M'k := (IFold.ifold (fun i '(k0,M'k)=>
+        let Ik := I.[k] in
         let Mrk := M.[Uint63.succ Ik].[r] in
-        let z := BigQ.red ((Mlk * Mrs - Mls * Mrk)/Mrs)%bigQ in
-        MIk.[l <- z]) (length M.[Uint63.succ Ik]) 
-        (make (length M.[Uint63.succ Ik]) 0%bigQ)
-    in
-    let M' := M'.[Uint63.succ Ik <- M'Ik] in M') (length I) M' in
-  let M'r := PArrayUtils.mk_fun (fun l => BigQ.red (-Ms.[l]/Mrs)%bigQ) (length Ms) 0%bigQ in
-  let M' := M'.[Uint63.succ r <- M'r] in
-  M'.
+        if (i =? I.[k0])%uint63 then
+          if (i =? Is)%uint63 then
+            let z := BigQ.red (Mrk / Mrs)%bigQ in
+            (Uint63.succ k0, M'k.[i <- z])
+          else
+            (Uint63.succ k0, M'k)
+        else
+          if (i =? r)%uint63 then
+            (k0, M'k)
+          else
+            let Mik := M.[Uint63.succ Ik].[i] in
+            let Mis := M.[Uint63.succ Is].[i] in
+            let z := BigQ.red ((Mik * Mrs - Mis * Mrk)/Mrs)%bigQ in
+          (k0, M'k.[i <- z])
+      ) (length M.[0]) (0%uint63, make (length M.[0%uint63]) 0%bigQ)).2 in
+      (Uint63.succ k, M'.[j <- M'k])
+      else
+        if (j =? Uint63.succ r)%uint63 then
+          let M'r := (IFold.ifold (fun i '(k0,M'r)=>
+          if (i =? I.[k0])%uint63 then
+          if (i =? Is)%uint63 then
+            let z := BigQ.red (1 / Mrs)%bigQ in
+            (Uint63.succ k0, M'r.[i <- z])
+          else
+            (Uint63.succ k0, M'r)
+        else
+          if (i =? r)%uint63 then
+            (k0, M'r)
+          else
+            let z := BigQ.red (- Ms.[i]/Mrs)%bigQ in
+          (k0, M'r.[i <- z])
+      ) (length M.[0]) (0%uint63, make (length M.[0%uint63]) 0%bigQ)).2 in
+      (k, M'.[j <- M'r])
+      else
+        let M'j := PArrayUtils.mk_fun 
+          (fun i=> if (i=?Uint63.pred j)%uint63 then 1%bigQ else 0%bigQ)
+        (length M.[0]) (0%bigQ) 
+        in (k, M'.[j <- M'j])
+  ) (length M) (0%uint63, M')).2 in M'.
 
 Definition explore
   (b : array bigQ)
@@ -125,7 +166,11 @@ Definition initial
   let M := M.[0 <- M0] in
   let M :=
     IFold.ifold (fun i M=>
-      let M := M.[Uint63.succ I.[i] <- BigQUtils.bigQ_scal_arr (-1)%bigQ (BigQUtils.bigQ_mul_mx_col A inv.[i])] in M) (length I) M
+      let D := PArrayUtils.mk_fun 
+        (fun j=> if (i=?j)%uint63 then 1%bigQ else 0%bigQ) 
+      (length M0) 0%bigQ in
+    let M := M.[Uint63.succ I.[i] <- BigQUtils.bigQ_add_arr
+      (BigQUtils.bigQ_scal_arr (-1)%bigQ (BigQUtils.bigQ_mul_mx_col A inv.[i])) D] in M) (length I) M
   in M.
 (*
 (x, B, M, q).
