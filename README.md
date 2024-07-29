@@ -25,7 +25,7 @@ Here are the prerequisites for this repository to work, with the versions that I
 
 Here are some commands to configure an opam switch that contains everything mandatory for the Coq theory.
 
-        $> opam switch create ocaml-base-compiler.4.14.0 these-Quentin-Canu
+        $> opam switch create these-Quentin-Canu ocaml-base-compiler.4.14.0
         $> opam repo add coq-released https://coq.inria.fr/opam/released
         $> opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
         $> opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
