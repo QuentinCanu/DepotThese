@@ -144,7 +144,11 @@ Definition lazy_check_basis (m : int63)
                in
                ((j+1)%uint63, acc, memory, current_cell, current)
              else
-               (j, acc.[i <- Gt], memory, current_cell, current)) m (0%uint63, sat_vect, memory, current_cell, current)
+              if acc.[i] is Eq then
+               (j, acc.[i <- Gt], memory, current_cell, current)
+              else
+              (j, acc, memory, current_cell, current)) 
+      m (0%uint63, sat_vect, memory, current_cell, current)
       in
       let '(_, res) :=
         IFold.ifold
