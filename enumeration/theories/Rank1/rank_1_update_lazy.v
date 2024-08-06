@@ -38,7 +38,7 @@ Definition memory_update (memory : array (array (array (option bigQ))))
 
 Definition max_length_24 := Eval vm_compute in Uint63.lsl 1%uint63 24%uint63.
 
-Definition current_update (certif_updates : array (array bigQ)) 
+Definition current_update (certif_updates : array (array bigQ))
   (current_cell current : int63):=
   let next_current := Uint63.succ current in
   if (next_current =? max_length_24)%uint63
@@ -91,10 +91,10 @@ Fixpoint eval
 Definition lazy_sat_pert
   (certif_bases : array basis)
   certif_pred certif_updates (root_base : int63)
-  (k : int63) (sat_vect : array comparison)
+  (k : int63) (sat_vect : array comparison) (* k is the index of an element of the basis *)
   memory current_cell current:=
   let I := certif_bases.[root_base] in
-  let '(_,res,memory,current_cell,current) := IFold.ifold
+  let '(_,res,memory,current_cell,current) := IFold.ifoldx (* iterates over the entries of the (I.[k]+1)-th column *)
     (fun i '(j, acc, memory, current_cell, current)=>
        if (I.[j] =? i)%uint63 then
          ((j+1)%uint63, acc, memory, current_cell, current) (* no-op when i is a line in the basis *)
@@ -107,7 +107,7 @@ Definition lazy_sat_pert
              (j, acc.[i <- Lt],memory,current_cell,current) (* HACK here, to be fixed *)
          else
            (j, acc, memory,current_cell,current) (* no-op since we only need to break inequality ties *)
-    ) (length sat_vect) (0%uint63, sat_vect, memory, current_cell, current)
+    ) (I.[k]+1)%uint63 (length sat_vect) ((k+1)%uint63, sat_vect, memory, current_cell, current)
   in
   (res,memory,current_cell,current).
 
@@ -125,7 +125,7 @@ Definition lazy_check_basis (m : int63)
     if (Mrs ?= 0)%bigQ is Eq then (Some false, memory, current_cell, current)
     else
       let '(_, sat_vect, memory, current_cell, current) :=
-        IFold.ifold
+        IFold.ifold (* iterates over the entries of the 0-th column that are out of the basis *)
           (fun i '(j, acc, memory, current_cell, current) =>
              if (I.[j] =? i)%uint63 then
                ((j+1)%uint63, acc, memory, current_cell, current)
@@ -136,7 +136,7 @@ Definition lazy_check_basis (m : int63)
                else (j, acc.[i <- Lt], memory, current_cell, current)) m (0%uint63, make m Eq, memory, current_cell, current)
       in
       let '(_, sat_lex, memory,current_cell, current) :=
-        IFold.ifold
+        IFold.ifold (* iterates over the column in the basis *)
           (fun i '(j, acc, memory,current_cell,current) =>
              if (I.[j] =? i)%uint63 then
                let '(acc,memory,current_cell,current) :=
@@ -144,10 +144,7 @@ Definition lazy_check_basis (m : int63)
                in
                ((j+1)%uint63, acc, memory, current_cell, current)
              else
-              if acc.[i] is Eq then
-               (j, acc.[i <- Gt], memory, current_cell, current)
-              else
-              (j, acc, memory, current_cell, current)) 
+               (j, acc, memory, current_cell, current))
       m (0%uint63, sat_vect, memory, current_cell, current)
       in
       let '(_, res) :=
@@ -156,8 +153,8 @@ Definition lazy_check_basis (m : int63)
              if res then
                if (i =? I.[j])%uint63 then ((j+1)%uint63, res)
                else
-                 if sat_lex.[i] is Gt then (j, res)
-                 else (j, false)
+                 if sat_lex.[i] is Lt then (j, false)
+                 else (j, res)
              else
                (j, false)) (length sat_lex) (0%uint63, true)
       in
@@ -203,7 +200,7 @@ Definition lazy_check_all_bases
     else false
   ) (length certif_dim).
 
-Definition label_img 
+Definition label_img
   (morph : array int63) (certif_bases : array basis) (certif_img : array (array int63))
   (memory : array (array (array (option bigQ)))):=
   IFold.iall (fun i=>
@@ -213,10 +210,10 @@ Definition label_img
     (IFold.ifold (fun k_idx '(k_bas,acc)=>
       if ~~ acc then (k_bas,acc) else
       let index := indices.[k_idx] in
-      if (k_bas <? length base)%uint63 && (base.[k_bas] =? index)%uint63 then 
+      if (k_bas <? length base)%uint63 && (base.[k_bas] =? index)%uint63 then
         (Uint63.succ k_bas, acc)
           (*vertex index = line index => don't have to be verified*)
-      else 
+      else
         let Val := memory.[i].[0].[index] in
         if Val is Some val then
           if (val ?= 0)%bigQ is Eq then (k_bas, acc) else (k_bas, false)
@@ -290,7 +287,7 @@ Definition regularity (A : array (array bigQ)) graph_lex :=
 
 Definition adjacency (A : array (array bigQ)) graph_lex bases :=
   let n' := Uint63.pred (length A.[0]) in
-  Com.compute_test graph_lex (fun i=> 
+  Com.compute_test graph_lex (fun i=>
     GraphUtils.neighbour_all (fun j =>
       let c := (AIC.array_inter (fun i j => (i <? j)%uint63) bases.[i] bases.[j]) in
       (c =? n')%uint63
