@@ -34,6 +34,8 @@ R1_MATRIX = "r1_matrix"
 R1_VECTOR = "r1_vector"
 LAZY = "lazy"
 JOBS = [GRAPH_CERTIF, DIAMETER, IMPROVED, RANK1, PIVOT, R1_MATRIX, R1_VECTOR, LAZY]
+HIRSCH_JOBS = [HIRSCH, DIAMETER, IMPROVED, RANK1, PIVOT, R1_MATRIX, R1_VECTOR, LAZY]
+EXCLUDED = "Excluded"
 
 GENERATORS = {
     COMMON : lrs2common.lrs2common,
@@ -263,7 +265,7 @@ def make_benchmarks(name,taskdict,exclude):
   for task in taskdict.keys():
     print(f"Performing {task}")
     if task.startswith(exclude):
-      benchmarks[task] = "Excluded"
+      benchmarks[task] = EXCLUDED
       print(f"{task} had been excluded")
     if benchmarks.get(task, None) is None:
       res = taskdict[task](name,benchmarks)
@@ -342,7 +344,8 @@ def create(args):
 
 def hirsch(args):
   name = args.which
-  make_benchmarks(name,HIRSCH_TASKS)
+  exclude = tuple(args.exclude) if args.exclude is not None else ()
+  make_benchmarks(name,HIRSCH_TASKS,exclude)
 
 # --------------------------------------------------------------------
 def to_csv(json_paths, tgtfile):
@@ -356,12 +359,13 @@ def to_csv(json_paths, tgtfile):
       bench = json.load(stream)
       res = {}
       for fst,vals in bench.items():
-        for snd,val in vals.items():
-          res[" : ".join([fst,snd])] = val
+        if vals != EXCLUDED:
+          for snd,val in vals.items():
+            res[" : ".join([fst,snd])] = val
       benchmarks.append((name,res))
   fieldnames = ["polytope"] + list(benchmarks[0][1].keys())
   with open(tgtfile, "w") as csv_stream:
-    writer = csv.DictWriter(csv_stream, fieldnames=fieldnames)
+    writer = csv.DictWriter(csv_stream, fieldnames=fieldnames, extrasaction='ignore')
     writer.writeheader()
     for name,res in benchmarks:
       writer.writerow(dict(polytope = name, **res))
@@ -521,6 +525,7 @@ def main():
 
   hirsch_parser = subparsers.add_parser(HIRSCH)
   hirsch_parser.add_argument("which", choices=HIRSCH_CEX)
+  hirsch_parser.add_argument("--exclude", nargs="+", choices=HIRSCH_JOBS)
   hirsch_parser.set_defaults(func=hirsch)
 
   csv_parser = subparsers.add_parser("csv")
