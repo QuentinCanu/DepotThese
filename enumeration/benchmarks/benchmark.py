@@ -22,7 +22,7 @@ DATA_DIR = os.path.join(CWD,"data")
 JOB_DIR = os.path.join(CWD,"jobs")
 BUILD_DATA_DIR = os.path.join(CWD,'..','..','_build','default','enumeration','benchmarks','data')
 NO_BENCH = "------"
-TIMEOUT_COEFF = 1000
+TIMEOUT_COEFF_DFLT = 100
 COMMON = "common"
 GRAPH_CERTIF = "graph_certif"
 HIRSCH = "hirsch"
@@ -124,7 +124,7 @@ def compute_lrs(name,_):
 
 # --------------------------------------------------------------------
 def generation(tgtname, start, *certificates):
-  def worker(name,_):
+  def worker(name,*args):
     st = time.time()
     tgtdir = os.path.join(DATA_DIR, name, "certificates", tgtname)
     os.makedirs(tgtdir,exist_ok=True)
@@ -154,7 +154,7 @@ def job(jobdir, timeout, *relpath):
   max_memory = -math.inf
   files = list(os.listdir(jobdir))
   files.sort()
-  files.sort(key=f"final.v".__eq__)
+  files.sort(key=lambda x : x.startswith("final"))
   for file in files:
     if file.endswith(".v"):
       rel_path = os.path.join(*relpath, file+"o")
@@ -180,7 +180,7 @@ def certif_compilation(tgtdir, timeout, *relpath):
   return res
 # --------------------------------------------------------------------
 def conversion(certif_type,text=False):
-  def worker(name,benchmarks):
+  def worker(name,benchmarks,timeout_coeff):
     res = {}
     certif_path = os.path.join(DATA_DIR, name, "certificates", certif_type, name+".json")
     with open(certif_path) as stream:
@@ -206,7 +206,7 @@ def conversion(certif_type,text=False):
       et = time.time()
       res["time of serialization"] = et - st
       res.update(bench)
-      timeout = TIMEOUT_COEFF*max(1,math.ceil(float(benchmarks["lrs"]["time"])))
+      timeout = timeout_coeff*max(1,math.ceil(float(benchmarks["lrs"]["time"])))
       print("The execution timeout is in", timeout)
       res.update(certif_compilation(bindir, timeout, *binpath))
     return res
@@ -214,13 +214,13 @@ def conversion(certif_type,text=False):
 
 # --------------------------------------------------------------------
 def execution(algo,compute=False):
-  def worker(name,bench):
+  def worker(name,bench,timeout_coeff):
     tgtpath = ["data", name, algo, "compute" if compute else "vm_compute"]
     tgtdir = os.path.join(CWD, *tgtpath)
     os.makedirs(tgtdir,exist_ok = True)
     jobdir = os.path.join(JOB_DIR, algo)
     coqjobs.coqjob(name, dune_name_algo(name, algo,compute), dune_name_certif(name, algo), PREREQUISITES[algo], jobdir, tgtdir, compute)
-    timeout = TIMEOUT_COEFF*max(1,math.ceil(float(bench["lrs"]["time"])))
+    timeout = timeout_coeff*max(1,math.ceil(float(bench["lrs"]["time"])))
     print("The execution timeout is in", timeout)
     return job(tgtdir,timeout,*tgtpath)
   return worker
@@ -255,7 +255,7 @@ def clean(args):
 
 
 # --------------------------------------------------------------------
-def make_benchmarks(name,taskdict,exclude):
+def make_benchmarks(name,taskdict,exclude,timeout):
   benchmarks_path = os.path.join(DATA_DIR,name,f"benchmarks_{name}.json")
   if os.path.exists(benchmarks_path):
     with open(benchmarks_path) as stream:
@@ -268,7 +268,7 @@ def make_benchmarks(name,taskdict,exclude):
       benchmarks[task] = EXCLUDED
       print(f"{task} had been excluded")
     if benchmarks.get(task, None) is None:
-      res = taskdict[task](name,benchmarks)
+      res = taskdict[task](name,benchmarks,timeout)
       benchmarks[task] = res
       with open(benchmarks_path, "w") as stream:
         json.dump(benchmarks,stream,indent=0)
@@ -333,6 +333,7 @@ HIRSCH_TASKS = {
 def create(args):
   polytope,dim = args.polytope, args.dim
   text,compute = args.text,args.compute
+  timeout = args.timeout
   exclude = tuple(args.exclude) if args.exclude is not None else ()
   if not text:
     del TASKS["graph_certif_conversion_text"]
@@ -340,12 +341,13 @@ def create(args):
     del TASKS["graph_certif_execution_compute"]
   name = polytope_name(polytope,dim)
   gen_lrs(polytope,dim)
-  make_benchmarks(name,TASKS,exclude)
+  make_benchmarks(name,TASKS,exclude,timeout)
 
 def hirsch(args):
   name = args.which
   exclude = tuple(args.exclude) if args.exclude is not None else ()
-  make_benchmarks(name,HIRSCH_TASKS,exclude)
+  timeout = args.timeout
+  make_benchmarks(name,HIRSCH_TASKS,exclude,timeout)
 
 # --------------------------------------------------------------------
 def to_csv(json_paths, tgtfile):
@@ -521,11 +523,13 @@ def main():
   create_parser.add_argument("--text", action="store_true")
   create_parser.add_argument("--compute", action="store_true")
   create_parser.add_argument("--exclude", nargs="+", choices=JOBS)
+  create_parser.add_argument("--timeout", default=TIMEOUT_COEFF_DFLT, type=int)
   create_parser.set_defaults(func=create)
 
   hirsch_parser = subparsers.add_parser(HIRSCH)
   hirsch_parser.add_argument("which", choices=HIRSCH_CEX)
   hirsch_parser.add_argument("--exclude", nargs="+", choices=HIRSCH_JOBS)
+  hirsch_parser.add_argument("--timeout", default=TIMEOUT_COEFF_DFLT, type=int)
   hirsch_parser.set_defaults(func=hirsch)
 
   csv_parser = subparsers.add_parser("csv")

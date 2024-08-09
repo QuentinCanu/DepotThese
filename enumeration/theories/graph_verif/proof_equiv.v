@@ -845,9 +845,11 @@ by move/high_diameter_check_equiv=> /[apply] /(_ _ diameter_h).
 Qed.
 
 Lemma disprove_Hirsch:
+  exists n, exists P : 'poly[rat]_n,
   ((diameter (poly_graph P)) > 
   #|`facets P| - (\pdim P).-1)%nat.
 Proof.
+exists n'.+1; exists P.
 case: high_dim_h=> x [s] high_dim.
 apply/high_algo_Hirsch; 
   [ exact:high_enum_h|exact:high_img_h|
