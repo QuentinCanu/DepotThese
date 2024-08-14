@@ -11,9 +11,9 @@ Require Import bounded_Po_test_r dim_full_test_r diameter_check_r diameter_exact
 Local Notation m' := (Com.m A).-1.
 Local Notation n' := (Com.n A).-1.
 Local Notation high_poly := (spec_poly m' n' (A, b)).
-Local Notation P := (poly_of_syst high_poly).
+Local Notation __NAME__ := (poly_of_syst high_poly).
 
-Lemma Exact_Diameter : diameter P = __VALUE__%nat.
+Lemma Exact_Diameter___NAME__ : diameter (poly_graph __NAME__) = __VALUE__%nat.
 Proof.
 apply: diameter_of___NAME__.
 - exact: poly_format_ok.
