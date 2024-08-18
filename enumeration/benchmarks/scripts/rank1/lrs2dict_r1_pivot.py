@@ -101,7 +101,7 @@ def get_initial_basing_point(A,b,base):
     x_I = gmp_A_I.lu_solve(gmp_b_I)
     inv = gmp_A_I.inv()
     det = gmp_A_I.det()
-    return (list_of_gmp_matrix(det * x_I)[0], list_of_gmp_matrix(det * inv), int(det))
+    return (list_of_gmp_matrix(x_I)[0], list_of_gmp_matrix(inv), abs(int(det)))
 
 # Construct the graph of lex feasible bases + order of construction
 # -------------------------------------------------------------------
