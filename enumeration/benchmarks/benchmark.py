@@ -195,7 +195,9 @@ def conversion(certif_type,text=False):
       et = time.time()
       res["time of serialization"] = et - st 
       res.update(bench)
-      res.update(certif_compilation(textdir, *textpath))
+      timeout = timeout_coeff * max(1,math.ceil(float(benchmarks["lrs"]["time"])))
+      print("The execution timeout is in", timeout)
+      res.update(certif_compilation(textdir, timeout, *textpath))
     else:
       binpath = ["data", name, certif_type, "bin_certif"]
       bindir = os.path.join(CWD, *binpath)
@@ -248,6 +250,8 @@ def clean(args):
       bench = json.load(stream)
       bench[f"{taskname}_conversion"] = None
       bench[f"{taskname}_execution"] = None
+      if f"{taskname}_conversion_text" in bench.keys():
+        bench[f"{taskname}_conversion_text"] = None
       if certificates:
         bench[f"{taskname}_generation"] = None
     with open(benchfile, "w") as stream:
