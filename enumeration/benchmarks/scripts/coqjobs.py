@@ -24,6 +24,8 @@ def coqjob(name, duneName, duneDataname, duneAlgoname, jobdir, tgtdir, compute=F
     for filename in os.listdir(jobdir):
         if os.path.splitext(filename)[1] != '.v':
             continue
+        if compute and filename == "final.v":
+            continue
         with open(os.path.join(jobdir, filename)) as stream:
             contents = stream.read()
         contents = contents.replace('__NAME__', name)

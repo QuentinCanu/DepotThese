@@ -71,31 +71,31 @@ PREREQUISITES = {
 #     for i in range(0, len(lst), n):
 #         yield lst[i:i + n]
 
-def command_call(command, timeout=None, prefix=""):
+def command_call(command, prefix="", timeout=None):
   print(command)
   try:
     output = sp.run(prefix + command,
             shell=True, executable="/bin/zsh", check=True,
-            capture_output=True, text=True, timeout=timeout)
-    print(output.stdout, output.stderr)
+            capture_output=True, text=True)
+    print(output.stderr)
     return True, output.stderr
-  except sp.TimeoutExpired:
-    print("TIMEOUT !")
-    return False, timeout
-  except:
+  except sp.CalledProcessError as cp:
+    if cp.returncode == 124:
+      print("TIMEOUT")
+      return False, cp.stderr
     print("ERREUR !")
     return None
 
 def format_time_output(st):
   if st is None:
     return None, None
+  findit = re.search(r"(?P<time>\d+)[,.](?P<mtime>\d+)s.+, (?P<memory>\d+)", st[1])
+  time, mtime = findit.group("time"), findit.group("mtime")
+  memory = float(findit.group("memory"))
   if st[0]:
-    findit = re.search(r"(?P<time>\d+)[,.](?P<mtime>\d+)s.+, (?P<memory>\d+)", st[1])
-    time, mtime = findit.group("time"), findit.group("mtime")
-    memory = float(findit.group("memory"))
     return f"{time}.{mtime}", str(memory)
   else:
-    return f"{st[1]} (TIMEOUT)", "None (TIMEOUT)"
+    return f"{time}.{mtime} (TIMEOUT)", str(memory) + " (TIMEOUT)"
 
 # --------------------------------------------------------------------
 def polytope_name(polytope,param):
@@ -148,7 +148,7 @@ def generation(tgtname, start, *certificates):
   return worker
 
 # --------------------------------------------------------------------
-def job(jobdir, timeout, *relpath):
+def job(jobdir, *relpath, timeout=None):
   res = {}
   times = []
   max_memory = -math.inf
@@ -158,13 +158,14 @@ def job(jobdir, timeout, *relpath):
   for file in files:
     if file.endswith(".v"):
       rel_path = os.path.join(*relpath, file+"o")
-      st = command_call("time dune build " + rel_path, prefix=TIME_MEM_PREFIX, timeout=timeout)
+      command = "time " + ("" if timeout is None else f"timeout {timeout}s") + " dune build " 
+      st = command_call(command + rel_path, prefix=TIME_MEM_PREFIX, timeout=timeout)
       time, memory = format_time_output(st)
       res[file + " execution time"] = time
       res[file + " execution memory"] = memory
   return res
 
-def certif_compilation(tgtdir, timeout, *relpath):
+def certif_compilation(tgtdir, *relpath, timeout=None):
   res = {}
   times = []
   max_memory = -math.inf
@@ -173,14 +174,15 @@ def certif_compilation(tgtdir, timeout, *relpath):
     if file.endswith(".v"):
       print(f"Compiling {file}")
       rel_path = os.path.join(*relpath,file+"o")
-      st = command_call("time dune build " + rel_path,prefix=TIME_MEM_PREFIX, timeout=timeout)
+      command = "time" + (" " if timeout is None else f" timeout {timeout}s ") + "dune build "
+      st = command_call(command + rel_path, prefix=TIME_MEM_PREFIX, timeout=timeout)
       time, memory = format_time_output(st)
       res[file + " compilation time"] = time
       res[file + " memory"] = memory
   return res
 # --------------------------------------------------------------------
 def conversion(certif_type,text=False):
-  def worker(name,benchmarks,timeout_coeff):
+  def worker(name,benchmarks,timeout):
     res = {}
     certif_path = os.path.join(DATA_DIR, name, "certificates", certif_type, name+".json")
     with open(certif_path) as stream:
@@ -195,9 +197,7 @@ def conversion(certif_type,text=False):
       et = time.time()
       res["time of serialization"] = et - st 
       res.update(bench)
-      timeout = timeout_coeff * max(1,math.ceil(float(benchmarks["lrs"]["time"])))
-      print("The execution timeout is in", timeout)
-      res.update(certif_compilation(textdir, timeout, *textpath))
+      res.update(certif_compilation(textdir, *textpath, timeout=timeout))
     else:
       binpath = ["data", name, certif_type, "bin_certif"]
       bindir = os.path.join(CWD, *binpath)
@@ -208,23 +208,20 @@ def conversion(certif_type,text=False):
       et = time.time()
       res["time of serialization"] = et - st
       res.update(bench)
-      timeout = timeout_coeff*max(1,math.ceil(float(benchmarks["lrs"]["time"])))
-      print("The execution timeout is in", timeout)
-      res.update(certif_compilation(bindir, timeout, *binpath))
+      res.update(certif_compilation(bindir, *binpath, timeout=timeout))
     return res
   return worker
 
 # --------------------------------------------------------------------
 def execution(algo,compute=False):
-  def worker(name,bench,timeout_coeff):
+  def worker(name,bench,timeout):
     tgtpath = ["data", name, algo, "compute" if compute else "vm_compute"]
     tgtdir = os.path.join(CWD, *tgtpath)
     os.makedirs(tgtdir,exist_ok = True)
     jobdir = os.path.join(JOB_DIR, algo)
     coqjobs.coqjob(name, dune_name_algo(name, algo,compute), dune_name_certif(name, algo), PREREQUISITES[algo], jobdir, tgtdir, compute)
-    timeout = timeout_coeff*max(1,math.ceil(float(bench["lrs"]["time"])))
     print("The execution timeout is in", timeout)
-    return job(tgtdir,timeout,*tgtpath)
+    return job(tgtdir,*tgtpath, timeout=timeout)
   return worker
 
 # --------------------------------------------------------------------
@@ -252,6 +249,8 @@ def clean(args):
       bench[f"{taskname}_execution"] = None
       if f"{taskname}_conversion_text" in bench.keys():
         bench[f"{taskname}_conversion_text"] = None
+      if f"{taskname}_execution_compute" in bench.keys():
+        bench[f"{taskname}_execution_compute"] = None
       if certificates:
         bench[f"{taskname}_generation"] = None
     with open(benchfile, "w") as stream:
@@ -527,7 +526,7 @@ def main():
   create_parser.add_argument("--text", action="store_true")
   create_parser.add_argument("--compute", action="store_true")
   create_parser.add_argument("--exclude", nargs="+", choices=JOBS)
-  create_parser.add_argument("--timeout", default=TIMEOUT_COEFF_DFLT, type=int)
+  create_parser.add_argument("--timeout", type=int)
   create_parser.set_defaults(func=create)
 
   hirsch_parser = subparsers.add_parser(HIRSCH)
