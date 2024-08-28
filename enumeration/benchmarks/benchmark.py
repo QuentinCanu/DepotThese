@@ -22,7 +22,6 @@ DATA_DIR = os.path.join(CWD,"data")
 JOB_DIR = os.path.join(CWD,"jobs")
 BUILD_DATA_DIR = os.path.join(CWD,'..','..','_build','default','enumeration','benchmarks','data')
 NO_BENCH = "------"
-TIMEOUT_COEFF_DFLT = 100
 COMMON = "common"
 GRAPH_CERTIF = "graph_certif"
 HIRSCH = "hirsch"
@@ -124,7 +123,7 @@ def compute_lrs(name,_):
 
 # --------------------------------------------------------------------
 def generation(tgtname, start, *certificates):
-  def worker(name,*args):
+  def worker(name, *args):
     st = time.time()
     tgtdir = os.path.join(DATA_DIR, name, "certificates", tgtname)
     os.makedirs(tgtdir,exist_ok=True)
@@ -532,7 +531,7 @@ def main():
   hirsch_parser = subparsers.add_parser(HIRSCH)
   hirsch_parser.add_argument("which", choices=HIRSCH_CEX)
   hirsch_parser.add_argument("--exclude", nargs="+", choices=HIRSCH_JOBS)
-  hirsch_parser.add_argument("--timeout", default=TIMEOUT_COEFF_DFLT, type=int)
+  hirsch_parser.add_argument("--timeout", type=int)
   hirsch_parser.set_defaults(func=hirsch)
 
   csv_parser = subparsers.add_parser("csv")

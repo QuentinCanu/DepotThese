@@ -1,4 +1,4 @@
-(* Require Import Uint63.
+Require Import Uint63.
 From mathcomp Require Import all_ssreflect finmap.
 From Polyhedra Require Import poly_base.
 From PolyhedraHirsch Require Import extra_int extra_simplex high_graph.
@@ -27,4 +27,4 @@ apply: diameter_of___NAME__.
 - exact: bounded_Po_test_ok.
 - exact: graph_n0_ok.
 - exact: diameter_exact_ok.
-Qed. *)
+Qed.
