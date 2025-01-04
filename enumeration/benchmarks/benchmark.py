@@ -477,40 +477,42 @@ def plot(args):
 
 
 # --------------------------------------------------------------------
-DEBUG = r'''From Coq Require Import PArray Uint63.
-Require Import debug.
+# DEBUG = r'''From Coq Require Import PArray Uint63.
+# Require Import debug.
 
-(*{size}*)
-(*Time Eval vm_compute in (length debug.[0%uint63]).*)
-(*Time Eval vm_compute in (length debug.[1%uint63]).*)
-(*Time Eval vm_compute in debug.[0%uint63].[{number}%uint63].*)
-(*Time Eval vm_compute in debug.[1%uint63].[{number}%uint63].*)
-Time Eval vm_compute in (length debug).
-'''
+# (*{size}*)
+# (*Time Eval vm_compute in (length debug.[0%uint63]).*)
+# (*Time Eval vm_compute in (length debug.[1%uint63]).*)
+# (*Time Eval vm_compute in debug.[0%uint63].[{number}%uint63].*)
+# (*Time Eval vm_compute in debug.[1%uint63].[{number}%uint63].*)
+# Time Eval vm_compute in (length debug).
+# '''
 
-def debug(args):
-  param = args.param
-  debug_build = os.path.join(CWD,'..','..','_build','default','enumeration','benchmarks','debug')
-  if os.path.isdir(debug_build):
-    shutil.rmtree(debug_build)
+# def debug(args):
+#   param = args.param
+#   debug_build = os.path.join(CWD,'..','..','_build','default','enumeration','benchmarks','debug')
+#   if os.path.isdir(debug_build):
+#     shutil.rmtree(debug_build)
 
-  size = 1 << param
-  # test = [[i for i in range(size)],[i for i in range(size)]]
-  test = [i for i in range(size)]
-  res = {'debug' : test}
-  tgtdir = os.path.join(CWD,"debug")
-  os.makedirs(tgtdir, exist_ok=True)
-  dict2bin.dict2bin(tgtdir,res)
-  bin2coq.bin2coq("DEBUG",tgtdir)
-  with open(os.path.join(tgtdir,"test.v"), "w") as stream:
-    stream.write(DEBUG.format(number = size-1, size = size))
-  command_call(f"time dune build debug/debug.vo", prefix=TIME_MEM_PREFIX)
-  command_call(f"time dune build debug/test.vo", prefix=TIME_MEM_PREFIX)
+#   size = 1 << param
+#   # test = [[i for i in range(size)],[i for i in range(size)]]
+#   test = [i for i in range(size)]
+#   res = {'debug' : test}
+#   tgtdir = os.path.join(CWD,"debug")
+#   os.makedirs(tgtdir, exist_ok=True)
+#   dict2bin.dict2bin(tgtdir,res)
+#   bin2coq.bin2coq("DEBUG",tgtdir)
+#   with open(os.path.join(tgtdir,"test.v"), "w") as stream:
+#     stream.write(DEBUG.format(number = size-1, size = size))
+#   command_call(f"time dune build debug/debug.vo", prefix=TIME_MEM_PREFIX)
+#   command_call(f"time dune build debug/test.vo", prefix=TIME_MEM_PREFIX)
   
 
 # --------------------------------------------------------------------
 def main():
-  parser = argp.ArgumentParser()
+  parser = argp.ArgumentParser(
+    description="This program allows to test the graph certification algorithm on various examples.")
+  parser.set_defaults(func=lambda x: parser.print_help())
   subparsers = parser.add_subparsers()
   
   clean_parser = subparsers.add_parser("clean")
@@ -534,21 +536,21 @@ def main():
   hirsch_parser.add_argument("--timeout", type=int)
   hirsch_parser.set_defaults(func=hirsch)
 
-  csv_parser = subparsers.add_parser("csv")
-  csv_parser.add_argument("polytope", choices=[HIRSCH]+POLYTOPES)
-  csv_parser.add_argument("mini", type=int, nargs='?', default=None)
-  csv_parser.add_argument("maxi", type=int, nargs='?', default=None)
-  csv_parser.set_defaults(func=csv_gen)
+  # csv_parser = subparsers.add_parser("csv")
+  # csv_parser.add_argument("polytope", choices=[HIRSCH]+POLYTOPES)
+  # csv_parser.add_argument("mini", type=int, nargs='?', default=None)
+  # csv_parser.add_argument("maxi", type=int, nargs='?', default=None)
+  # csv_parser.set_defaults(func=csv_gen)
   
-  plot_parser = subparsers.add_parser("plot")
-  plot_parser.add_argument("name", type=str)
-  plot_parser.add_argument("mini", type=int, nargs='?', default=None)
-  plot_parser.add_argument("maxi", type=int, nargs='?', default=None)
-  plot_parser.set_defaults(func=plot)
+  # plot_parser = subparsers.add_parser("plot")
+  # plot_parser.add_argument("name", type=str)
+  # plot_parser.add_argument("mini", type=int, nargs='?', default=None)
+  # plot_parser.add_argument("maxi", type=int, nargs='?', default=None)
+  # plot_parser.set_defaults(func=plot)
 
-  debug_parser = subparsers.add_parser("debug")
-  debug_parser.add_argument("param", type=int)
-  debug_parser.set_defaults(func=debug)
+  # debug_parser = subparsers.add_parser("debug")
+  # debug_parser.add_argument("param", type=int)
+  # debug_parser.set_defaults(func=debug)
   
   args = parser.parse_args()
   args.func(args)

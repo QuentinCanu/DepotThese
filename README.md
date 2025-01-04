@@ -3,7 +3,7 @@
 This repository gathers the work done during my PhD thesis. This is mainly an extension to the [Coq-Polyhedra](https://github.com/Coq-Polyhedra/Coq-Polyhedra) repository.
 ## Installation
 
-## Prerequisites
+### Prerequisites
 
 Here are the prerequisites for this repository to work, with the versions that I use :
 
@@ -59,7 +59,7 @@ The `enumeration/benchmarks` folder contains scripts to execute the different lo
 - The `scripts` and `jobs` folders contain materials mandatory for using the main script, `benchmarks.py`.
 - The `data` folder contains the certificates and the benchmark files for different polytopes.
 -  
-To perform, your current directory must be `enumeration/benchmarks`. First, you must type
+To perform the following commands, your current directory must be `enumeration/benchmarks`. First, you must type
 
 	>$./benchmarks.py clean
 
@@ -78,8 +78,6 @@ The benchmarks for the two counter-examples to the Hirsch are slightly different
 or
 
 	>$./benchmarks.py hirsch poly23dim24
-
-There is also a file `benchmark.sh` for predefined parameters.
 
 Once the benchmarks for all the polytopes you want are generated, you can type the following command to generate a csv file
 
