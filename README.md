@@ -79,6 +79,6 @@ or
 
 	>$./benchmarks.py hirsch poly23dim24
 
-Once the benchmarks for all the polytopes you want are generated, you can type the following command to generate a csv file
+<!-- Once the benchmarks for all the polytopes you want are generated, you can type the following command to generate a csv file
 
-	>$./benchmarks.py csv
+	>$./benchmarks.py csv -->
