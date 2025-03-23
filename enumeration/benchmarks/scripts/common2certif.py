@@ -5,7 +5,6 @@ import fractions as fc
 import argparse as argp
 import math, fractions, random as rd
 import networkx as nx
-import tqdm
 import random as rd
 from . import farkas as fk
 

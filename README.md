@@ -12,7 +12,6 @@ Here are the prerequisites for this repository to work, with the versions that I
 - `Python 3.8.7`
 - Python libraries: 
 	- [networkx](https://networkx.org/)
-	- [tqdm](https://tqdm.github.io/)
 	- [sympy](https://www.sympy.org/en/index.html)
 	- [gmpy2](https://gmpy2.readthedocs.io/en/latest/)
 - `OCaml 4.14.0`
