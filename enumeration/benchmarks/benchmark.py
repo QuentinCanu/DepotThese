@@ -12,7 +12,7 @@ from scripts.rank1 import lrs2dict_r1, lrs2dict_r1_pivot, lrs2dict_r1_matrix, lr
 import csv
 import shutil
 import json
-import matplotlib.pyplot as pp
+#import matplotlib.pyplot as pp
 
 CWD = os.getcwd()
 TIME_MEM_PREFIX = r'TIMEFMT="%E : real time, %M : max memory" && '
