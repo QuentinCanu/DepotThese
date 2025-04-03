@@ -115,7 +115,7 @@ def gen_lrs(polytope, param):
       genlrs.generate_lrs(polytope, param)
 
 # --------------------------------------------------------------------
-def compute_lrs(name,_):
+def compute_lrs(name,_,_):
   inefile = os.path.join(DATA_DIR, name, "lrs", name+".ine")
   extfile = os.path.join(DATA_DIR, name, "lrs", name+".ext")
   time, memory = format_time_output(command_call(f"time lrs {inefile} {extfile}",prefix=TIME_MEM_PREFIX))
