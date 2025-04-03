@@ -511,11 +511,12 @@ def plot(args):
 # --------------------------------------------------------------------
 def main():
   parser = argp.ArgumentParser(
-    description="This program allows to test the graph certification algorithm on various examples.")
+    description=r"""This program allows to test the graph certification algorithm on various examples. For any given polyhedron, it first creates certificates in json format. It then uses json format and translate them into Coq.""")
   parser.set_defaults(func=lambda x: parser.print_help())
   subparsers = parser.add_subparsers()
   
   clean_parser = subparsers.add_parser("clean")
+  clean_parser.description = "This command clears the corresponding directory of its certificates. It takes the directory name (e.g. cube_3) and the task (e.g. graph_certif)."
   clean_parser.add_argument("dirname", choices=os.listdir(DATA_DIR).remove(".gitignore"))
   clean_parser.add_argument("taskname")
   clean_parser.add_argument("--certificates", action="store_true")

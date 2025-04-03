@@ -57,18 +57,17 @@ The additional material mandatory to the graph certification algorithm can be fo
 The `enumeration/benchmarks` folder contains scripts to execute the different low-level implementations defined.
 - The `scripts` and `jobs` folders contain materials mandatory for using the main script, `benchmarks.py`.
 - The `data` folder contains the certificates and the benchmark files for different polytopes.
--  
-To perform the following commands, your current directory must be `enumeration/benchmarks`. First, you must type
-
-	>$./benchmarks.py clean
-
-in order to reset everything and to build the coq theory first. Then, if you type
+  
+To perform the following commands, your current directory must be `enumeration/benchmarks`. Then, by typing
 
 	>$./benchmarks.py create cube 3
 
-You will generate the benchmark for the 3-dimensional cube, as it can be found in `data/cube_3/benchmarks_cube_3.json`. The available parameters are
+you will generate the benchmark for the 3-dimensional cube, as it can be found in `data/cube_3/benchmarks_cube_3.json`. The available parameters are
 	
 	>$./benchmarks.py create [--text] [--compute] {cube,cross,cyclic,permutohedron} dim
+
+- `--text` also generates Coq certificates in plain text, as it is opposed to binary certificates read by binreader.
+- `--compute` also run the algorithms using the original reduction machine of Coq.
 
 The benchmarks for the two counter-examples to the Hirsch are slightly different, you can generate them by typing
 
@@ -78,6 +77,6 @@ or
 
 	>$./benchmarks.py hirsch poly23dim24
 
-<!-- Once the benchmarks for all the polytopes you want are generated, you can type the following command to generate a csv file
+In order to clean a directory, and execute a specific algorithm again, you can type a command like
 
-	>$./benchmarks.py csv -->
+	>$./benchmark.py clean cube_3 graph_certif
