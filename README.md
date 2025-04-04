@@ -1,39 +1,75 @@
 # PhD Repository of Quentin Canu
 
 This repository gathers the work done during my PhD thesis. This is mainly an extension to the [Coq-Polyhedra](https://github.com/Coq-Polyhedra/Coq-Polyhedra) repository.
-## Installation
+## Prerequisite
 
-### Prerequisites
+You can find here the prerequisites mandatory to work with this repository.
 
-Here are the prerequisites for this repository to work, with the versions that I use :
+### lrs
 
-- `zsh 5.8`
-- [lrs](http://cgm.cs.mcgill.ca/%7Eavis/C/lrs.html) installed (version `lrslib_v.7.2_2022.3.6` for me)
-- `Python 3.8.7`
-- Python libraries: 
-	- [networkx](https://networkx.org/)
-	- [sympy](https://www.sympy.org/en/index.html)
-	- [gmpy2](https://gmpy2.readthedocs.io/en/latest/)
+You first need [lrs](http://cgm.cs.mcgill.ca/%7Eavis/C/lrs.html) installed (version `lrslib_v.7.2_2022.3.6` for me), and put into your bin folder.
+
+You can use the command 
+
+```
+sudo apt install lrs
+```
+
+On Ubuntu/Debian.
+### Python libraries
+
+I use `Python 3.8.7`, but any `Python 3` version should work.
+
+- [networkx](https://networkx.org/)
+- [sympy](https://www.sympy.org/en/index.html)
+- [gmpy2](https://gmpy2.readthedocs.io/en/latest/)
+
+You can install these by using pip.
+```
+pip install networkx
+pip install sympy
+pip install gmpy2
+```
+
+The python scripts also need `zsh` to function. It can be installed with the package manager of your choice.
+
+### opam
+
+In order to install OCaml and Coq, we recommend the usage of the opam package manager. It can be installed with the package manager of your choice.
+
+The packages required are :
+
 - `OCaml 4.14.0`
 - `opam 2.1.3`
 - `Coq 8.16.0`
 - `dune 3.14.2`
 - `coq-bignums 9.0.0+coq8.16`
-- Pin these versions of [mathcomp](https://github.com/Coq-Polyhedra/mathcomp.git), [finmap](https://github.com/Coq-Polyhedra/finmap.git) and [binreader](https://github.com/Coq-Polyhedra/coq-binreader.git#main)
-### Installing prerequisites from opam
+- Pin this version of [mathcomp](https://github.com/Coq-Polyhedra/mathcomp.git)
+- Pin this version of [finmap](https://github.com/Coq-Polyhedra/finmap.git)
+- Pin this version of [binreader](https://github.com/Coq-Polyhedra/coq-binreader.git#main)
 
-Here are some commands to configure an opam switch that contains everything mandatory for the Coq theory.
+The command to install these by using opam are :
 
-        $> opam switch create these-Quentin-Canu ocaml-base-compiler.4.14.0
-        $> opam repo add coq-released https://coq.inria.fr/opam/released
-        $> opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
-        $> opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
-        $> opam pin add -n coq 8.16.0
-        $> opam pin add -n coq-bignums 9.0.0+coq8.16
-        $> opam pin add -n https://github.com/Coq-Polyhedra/mathcomp.git
-        $> opam pin add -n https://github.com/Coq-Polyhedra/finmap.git
-        $> opam pin add -n https://github.com/Coq-Polyhedra/coq-binreader.git#main
-        $> opam install dune coq coq-mathcomp-field coq-mathcomp-finmap coq-binreader
+```
+opam switch create these-Quentin-Canu ocaml-base-compiler.4.14.0
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
+opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+opam pin add -n coq 8.16.0
+opam pin add -n coq-bignums 9.0.0+coq8.16
+opam pin add -n https://github.com/Coq-Polyhedra/mathcomp.git
+opam pin add -n https://github.com/Coq-Polyhedra/finmap.git
+opam pin add -n https://github.com/Coq-Polyhedra/coq-binreader.git#main
+opam install dune coq coq-mathcomp-field coq-mathcomp-finmap coq-binreader
+```
+
+Once installed, if you are on the root of this repo, you can run
+
+```
+dune build enumeration/theories
+```
+
+to compile everything.
 ## Description of the repository
 
 The original work of Coq-Polyhedra can be found in the `theories` folder.
@@ -60,23 +96,29 @@ The `enumeration/benchmarks` folder contains scripts to execute the different lo
   
 To perform the following commands, your current directory must be `enumeration/benchmarks`. Then, by typing
 
-	>$./benchmarks.py create cube 3
+```
+./benchmarks.py create cube 3
+```
 
 you will generate the benchmark for the 3-dimensional cube, as it can be found in `data/cube_3/benchmarks_cube_3.json`. The available parameters are
-	
-	>$./benchmarks.py create [--text] [--compute] {cube,cross,cyclic,permutohedron} dim
+
+```	
+./benchmarks.py create [--text] [--compute] {cube,cross,cyclic,permutohedron} dim
+```
 
 - `--text` also generates Coq certificates in plain text, as it is opposed to binary certificates read by binreader.
 - `--compute` also run the algorithms using the original reduction machine of Coq.
 
 The benchmarks for the two counter-examples to the Hirsch are slightly different, you can generate them by typing
 
-	>$./benchmarks.py hirsch poly20dim21
-	
+```
+./benchmarks.py hirsch poly20dim21
+```
+
 or
-
-	>$./benchmarks.py hirsch poly23dim24
-
+```
+./benchmarks.py hirsch poly23dim24
+```
 In order to clean a directory, and execute a specific algorithm again, you can type a command like
 
-	>$./benchmark.py clean cube_3 graph_certif
+./benchmark.py clean cube_3 graph_certif
