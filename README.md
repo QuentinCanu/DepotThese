@@ -121,4 +121,6 @@ or
 ```
 In order to clean a directory, and execute a specific algorithm again, you can type a command like
 
+```
 ./benchmark.py clean cube_3 graph_certif
+```
