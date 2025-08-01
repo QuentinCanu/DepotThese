@@ -127,7 +127,7 @@ Lemma to_feas_bas_edges :
 Proof.
 move=> x y /[dup] /edge_vtxlr [xG yG]. 
 rewrite edge_mk_graph ?inE // -in_succE => yx.
-rewrite splx_adj_neq /set_adjacence /=.
+rewrite splx_adj_neq /set_adjacency /=.
 move/allP: G_lex_edge=> /(_ x xG) /allP /(_ y yx); rewrite /inter_verification.
 by rewrite /to_feas_bas; case: {-}_/idP=> // p; case: {-}_/idP.
 Qed.

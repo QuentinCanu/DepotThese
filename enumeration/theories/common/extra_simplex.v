@@ -43,10 +43,10 @@ Qed.
 
 Definition simplex_lex_exec := Simplex.phase2_exec c bas0.
 
-Definition set_adjacence := fun I I' : {set 'I_m} =>  #|I :&: I'| == n.-1.
+Definition set_adjacency := fun I I' : {set 'I_m} =>  #|I :&: I'| == n.-1.
 
 Lemma simplex_lex_exec_adj: 
-  path (fun I J : Simplex.lex_feasible_basis A b => set_adjacence I J) bas0 simplex_lex_exec.
+  path (fun I J : Simplex.lex_feasible_basis A b => set_adjacency I J) bas0 simplex_lex_exec.
 Proof. exact:Simplex.phase2_exec_adj. Qed.
 
 Lemma simplex_lex_exec_lexopt: 
@@ -271,21 +271,21 @@ Local Notation n := n'.+1.
 Local Notation m := m'.+1.
 Context (A : 'M[R]_(m,n)) (b : 'cV[R]_m).
 
-Definition lex_graph := mk_graph [fset x | x : Simplex.lex_feasible_basis A b] (fun I J : Simplex.lex_feasible_basis A b =>  set_adjacence n I J).
+Definition lex_graph := mk_graph [fset x | x : Simplex.lex_feasible_basis A b] (fun I J : Simplex.lex_feasible_basis A b =>  set_adjacency n I J).
 
 Section LexGraphProofs.
 
-Lemma splx_adj_sym I J: (@set_adjacence n m I J) -> (@set_adjacence n m J I).
-Proof. by rewrite /set_adjacence setIC. Qed.
+Lemma splx_adj_sym I J: (@set_adjacency n m I J) -> (@set_adjacency n m J I).
+Proof. by rewrite /set_adjacency setIC. Qed.
 
-Lemma splx_adj_xx (I : Simplex.lex_feasible_basis A b): ~~ (@set_adjacence n m I I).
+Lemma splx_adj_xx (I : Simplex.lex_feasible_basis A b): ~~ (@set_adjacency n m I I).
 Proof.
-rewrite /set_adjacence setIid Simplex.prebasis_card.
+rewrite /set_adjacency setIid Simplex.prebasis_card.
 by elim: n'.
 Qed.
 
 Lemma splx_adj_neq (I J : Simplex.lex_feasible_basis A b):
-  (J != I) && (@set_adjacence n m I J) = (@set_adjacence n m I J).
+  (J != I) && (@set_adjacency n m I J) = (@set_adjacency n m I J).
 Proof.
 rewrite andb_idl //.
 move=> adj_IJ; apply: contraT; rewrite negbK=> /eqP IJ.
@@ -412,9 +412,9 @@ set j := Simplex.argmin_gap _ _ _; exists j=> //.
 exact/Simplex.lex_ent_var_not_in_basis.
 Qed.
 
-Lemma neigh_reg_adj : (@set_adjacence n m I neigh_reg).
+Lemma neigh_reg_adj : (@set_adjacency n m I neigh_reg).
 Proof.
-rewrite /set_adjacence; case: neigh_regE=> j j_n_I ->.
+rewrite /set_adjacency; case: neigh_regE=> j j_n_I ->.
 rewrite setIUr setIDA setIid disjoint_setI0 1?disjoint_sym ?disjoints1 //.
 rewrite set0U cardsD (elimT setIidPr) ?sub1set ?enum_valP //.
 by rewrite Simplex.prebasis_card cards1 subn1.
@@ -444,7 +444,7 @@ End NeighInj.
 Section NeighSurj.
 
 Lemma splx_adj_witness (J : Simplex.lex_feasible_basis A b):
-  (@set_adjacence n m I J) -> exists i j,
+  (@set_adjacency n m I J) -> exists i j,
   [/\ i \in I, j \notin I & (J  = j |: (I :\ i) :> {set _})].
 Proof.
 move/eqP=> adjIJ.
@@ -473,7 +473,7 @@ Qed.
 
 Definition neigh_reg_fset := [fset neigh_reg i | i in 'I_#|I|].
 
-Lemma neigh_reg_surj (J : Simplex.lex_feasible_basis A b): (@set_adjacence n m I J) -> exists i, J = neigh_reg i.
+Lemma neigh_reg_surj (J : Simplex.lex_feasible_basis A b): (@set_adjacency n m I J) -> exists i, J = neigh_reg i.
 Proof.
 case/splx_adj_witness=> i' [j] [i'I j_nI J_eq].
 set i := (enum_rank_in i'I i'); exists i.

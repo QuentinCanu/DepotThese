@@ -181,7 +181,7 @@ Qed.
 Section EdgeActive.
 
 Context (I J : Simplex.lex_feasible_basis A b).
-Hypothesis edge_IJ: (@set_adjacence n m I J).
+Hypothesis edge_IJ: (@set_adjacency n m I J).
 Local Definition x := Simplex.point_of_basis b I.
 Local Definition y := Simplex.point_of_basis b J.
 Hypothesis x_n_y: x != y.
@@ -543,11 +543,11 @@ by move/(_ isT); rewrite splx_pt_Ix leNgt obj_func_min_xy.
 Qed.
 
 Lemma adj_I_to_J: exists P Q: Simplex.lex_feasible_basis A b,
-  [/\ (@set_adjacence n m P Q), Simplex.point_of_basis b P = x
+  [/\ (@set_adjacency n m P Q), Simplex.point_of_basis b P = x
     & Simplex.point_of_basis b Q = y].
 Proof.
 have:=path_biprop_edge=> /(_ _ _ _ _ I (exec_adj min_epsilon)).
-move=> /(_ (@set_adjacence n m)) /(_ (fun K=> Simplex.point_of_basis b K = x)).
+move=> /(_ (@set_adjacency n m)) /(_ (fun K=> Simplex.point_of_basis b K = x)).
 move=> /(_ (fun K=> Simplex.point_of_basis b K = y)).
 case.
 - exact/simplex_lex_exec_adj.
@@ -564,7 +564,7 @@ Qed.
 End EdgeSimplexExec. 
 
 Lemma vtx_to_adj_lex_basis x y: adj P x y -> exists I J : Simplex.lex_feasible_basis A b,
-  [/\ (@set_adjacence n m I J), Simplex.point_of_basis b I = x & 
+  [/\ (@set_adjacency n m I J), Simplex.point_of_basis b I = x & 
   Simplex.point_of_basis b J = y].
 Proof.
 move=> edge_xy; have:= adj_vtxl edge_xy.
